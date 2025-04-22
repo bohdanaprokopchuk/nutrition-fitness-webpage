@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%-	include	("./partials/head", {title: title})	%>
+</head>
+
+<body>
+    <%- include ("./partials/userbar") %>
+    <%- include ("./partials/header", { active: 1}) %>
+
+    <div class="container">
+        <div class="row mt-4 py-4 justify-content-center">
+            <div class="col-md-8">
+                <div class="image-container">
+                    <img src="/images/home_1.jpg" alt="Description of image" class="img-fluid">
+                </div>
+            </div>
+    
+            <div class="col-md-4 calculator">
+                <h2 class="text-center mb-2">Калькулятор ІМТ</h2>
+                <form id="bmiForm">
+                    <div class="mb-3">
+                        <label for="height" class="form-label">Зріст (см):</label>
+                        <input type="number" class="form-control" id="height" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="weight" class="form-label">Вага (кг):</label>
+                        <input type="number" class="form-control" id="weight" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Розрахувати</button>
+                </form>
+    
+                <div id="result" class="result text-center"></div>
+                <div id="advice" class="advice"></div>
+            </div>
+        </div>
+    
+        <div class="row my-4 justify-content-center py-4">
+            <div class="col-md-12">
+                <h2>Блог</h2>
+            </div>
+            <div class="col-md-12">
+                <div class="row">
+    
+                    <% posts.forEach(post=> {%>
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <div class="card h-100 post-card">
+                                <div class="card-body">
+                                    <% if (post.image_path) { %>
+                                        <figure class="card-img-top m-0 overflow-hidden" style="height: 200px;">
+                                            <a href="/post/<%= post.id %>">
+                                                <img class="img-fluid w-100 h-100 object-fit-cover" loading="lazy"
+                                                    src="<%= post.image_path %>" alt="<%= post.title %>">
+                                            </a>
+                                        </figure>
+                                        <% } %>
+    
+                                            <span class="badge bg-secondary post-category my-2 p-2">
+                                                <%= post.category %>
+                                            </span>
+                                            <h5 class="card-title">
+                                                <%= post.title %>
+                                            </h5>
+                                            <p class="card-text"><%- post.content.substring(0, 100) %>...</p>
+                                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                                <small class="post-date">
+                                                    <%= post.date_created %>
+                                                </small>
+                                                <a href="/post/<%= post.id %>" class="btn btn-sm btn-outline-primary">Читати
+                                                    далі</a>
+                                            </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <%}); %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<%- include ("./partials/footer") %>
+</body>
+</html>

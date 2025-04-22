@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="uk">
+    <head>
+        <%- include("./partials/head", {title: "Мій індивідуальний план" }) %>
+    </head>
+
+<body class="myprograms">
+    <%- include("./partials/userbar") %>
+        <%- include("./partials/header", { active: 7}) %>
+
+            <section class="action-navbar">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-12 d-flex my-1 py-1 justify-content-center">
+                            <input type="number" id="weight" class="form-control mx-1 weight-now"
+                                placeholder="Вкажіть вагу">
+                            <button id="start-trenning" class="btn-grad mx-1 start-trenning">
+                                Розпочати заняття
+                            </button>
+                            <button id="pause-trenning" class="btn btn-warning mx-1 pause-trenning"
+                                style="display: none;">
+                                Пауза
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Модальне вікно для повідомлення про завершення тренування -->
+            <div class="modal fade" id="workoutCompleteModal" tabindex="-1" aria-labelledby="workoutCompleteModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title" id="workoutCompleteModalLabel">Тренування завершено!</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="workout-summary"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-success" id="modal-ok-button">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container plans-creator my-5">
+                <h1 class="text-center mb-4">Список ваших програм</h1>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h3 class="mb-0">Ваші тренування</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="exercises-list" class="accordion">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Завантаження...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-center mt-2">
+                            Додати нові вправи на <a href="/programs">сторінці програм тренувань</a>.
+                        </p>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-success text-white">
+                                <h3 class="mb-0">Ваш план харчування</h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="diet-container" class="accordion">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Завантаження...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-center mt-2">
+                            Додати нові страви на <a href="/plans">сторінці планів харчування</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Глобальні змінні для стану тренування
+                    const workoutState = {
+                        id: null,
+                        startTime: null,
+                        endTime: null,
+                        duration: 0,
+                        caloriesBurned: 0,
+                        weight: 0,
+                        exercises: [],
+                        pauses: [],
+                        isPaused: false,
+                        pauseStartTime: null,
+                        totalPausedTime: 0,
+                        timerInterval: null,
+                        totalWorkoutSeconds: 0,
+                        totalWorkoutCalories: 0,
+                        completed: false
+                    };
+
+                    // Елементи інтерфейсу
+                    const elements = {
+                        startButton: document.getElementById('start-trenning'),
+                        pauseButton: document.getElementById('pause-trenning'),
+                        weightInput: document.getElementById('weight'),
+                        modalOkButton: document.getElementById('modal-ok-button'),
+                        workoutCompleteModal: new bootstrap.Modal(document.getElementById('workoutCompleteModal')),
+                        exercisesList: document.getElementById('exercises-list'),
+                        dietContainer: document.getElementById('diet-container'),
+                        workoutSummary: document.getElementById('workout-summary')
+                    };
+
+                    // Ініціалізація додатку
+                    function init() {
+                        loadPlans();
+                        setupEventListeners();
+                    }
+
+                    // Завантаження планів тренувань та харчування
+                    function loadPlans() {
+                        const localDietPlan = JSON.parse(localStorage.getItem('userMealPlan')) || [];
+                        const localExercisePlan = JSON.parse(localStorage.getItem('userExercisePlan')) || [];
+
+                        if (localDietPlan.length > 0) renderDiet(localDietPlan);
+                        if (localExercisePlan.length > 0) {
+                            renderExercises(localExercisePlan);
+                            updateTotalWorkoutDuration(localExercisePlan);
+                        }
+
+                        fetch('/api/get-plans')
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    if (data.plans.exercise?.length > 0) {
+                                        renderExercises(data.plans.exercise);
+                                        updateTotalWorkoutDuration(data.plans.exercise);
+                                        localStorage.setItem('userExercisePlan', JSON.stringify(data.plans.exercise));
+                                    }
+                                    if (data.plans.diet?.length > 0) {
+                                        renderDiet(data.plans.diet);
+                                        localStorage.setItem('userMealPlan', JSON.stringify(data.plans.diet));
+                                    }
+                                }
+                            })
+                            .catch(console.error);
+                    }
+
+                    // Оновлення загальної тривалості та калорій тренування
+                    function updateTotalWorkoutDuration(exercises) {
+                        workoutState.totalWorkoutSeconds = exercises.reduce((total, ex) => {
+                            const duration = ex.duration || ex.time || 0;
+                            if (typeof duration === 'string') {
+                                const match = duration.match(/(\d+)\s*хв/);
+                                return total + (match ? parseInt(match[1]) : parseInt(duration) || 0);
+                            }
+                            return total + duration;
+                        }, 0) * 60;
+
+                        workoutState.totalWorkoutCalories = exercises.reduce((total, ex) => {
+                            const calories = ex.calories || ex.energy || 0;
+                            if (typeof calories === 'string') {
+                                const match = calories.match(/(\d+)\s*ккал/);
+                                return total + (match ? parseInt(match[1]) : parseInt(calories) || 0);
+                            }
+                            return total + calories;
+                        }, 0);
+                    }
+
+                    // Налаштування обробників подій
+                    function setupEventListeners() {
+                        elements.startButton.addEventListener('click', handleStartButtonClick);
+                        elements.pauseButton.addEventListener('click', handlePauseButtonClick);
+                        elements.modalOkButton.addEventListener('click', handleModalOkButtonClick);
+                        window.addEventListener('storage', handleStorageEvent);
+                    }
+
+                    // Обробники подій
+                    function handleStartButtonClick() {
+                        if (!elements.weightInput.value.trim()) {
+                            alert('Будь ласка, введіть вашу вагу');
+                            return;
+                        }
+
+                        if (elements.startButton.textContent.trim().startsWith('Розпочати')) {
+                            startWorkout();
+                        } else {
+                            completeWorkout();
+                        }
+                    }
+
+                    function handlePauseButtonClick() {
+                        if (workoutState.isPaused) {
+                            resumeWorkout();
+                        } else {
+                            pauseWorkout();
+                        }
+                    }
+
+                    function handleModalOkButtonClick() {
+                        elements.workoutCompleteModal.hide();
+                        saveWorkoutData();
+                        resetWorkoutState();
+                    }
+
+                    function handleStorageEvent(event) {
+                        if (event.key === 'userMealPlan') {
+                            renderDiet(JSON.parse(event.newValue) || []);
+                        } else if (event.key === 'userExercisePlan') {
+                            const exercises = JSON.parse(event.newValue) || [];
+                            renderExercises(exercises);
+                            updateTotalWorkoutDuration(exercises);
+                        }
+                    }
+
+                    // Керування тренуванням
+                    async function startWorkout() {
+                        const weight = parseFloat(elements.weightInput.value);
+
+                        if (isNaN(weight)) {
+                            alert('Будь ласка, введіть коректну вагу');
+                            return;
+                        }
+
+                        try {
+                            // Відправляємо запит на сервер
+                            const response = await fetch('/api/workouts/start', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ weight })
+                            });
+
+                            if (!response.ok) throw new Error('Помилка сервера');
+
+                            const data = await response.json();
+
+                            if (!data.success) {
+                                throw new Error(data.message || 'Помилка при старті тренування');
+                            }
+
+                            // Оновлюємо стан тренування
+                            workoutState.id = data.workoutId;
+                            workoutState.startTime = new Date();
+                            workoutState.weight = weight;
+                            workoutState.pauses = [];
+                            workoutState.totalPausedTime = 0;
+                            workoutState.isPaused = false;
+                            workoutState.completed = false;
+
+                            // Запускаємо таймер
+                            updateTimerDisplay();
+                            workoutState.timerInterval = setInterval(updateTimerDisplay, 1000);
+
+                            // Оновлюємо інтерфейс
+                            elements.startButton.classList.add('btn-danger');
+                            elements.startButton.classList.remove('btn-grad');
+                            elements.startButton.textContent = 'Зупинити';
+                            elements.pauseButton.style.display = 'block';
+                            elements.weightInput.disabled = true;
+
+                        } catch (error) {
+                            console.error('Помилка:', error);
+                            alert(error.message || 'Не вдалося розпочати тренування');
+                        }
+                    }
+
+                    function pauseWorkout() {
+                        workoutState.pauseStartTime = Date.now();
+                        workoutState.isPaused = true;
+                        elements.pauseButton.textContent = 'Продовжити';
+                        clearInterval(workoutState.timerInterval);
+                    }
+
+                    function resumeWorkout() {
+                        const pauseEndTime = Date.now();
+                        workoutState.totalPausedTime += (pauseEndTime - workoutState.pauseStartTime);
+                        workoutState.pauses.push({
+                            start: workoutState.pauseStartTime,
+                            end: pauseEndTime,
+                            duration: pauseEndTime - workoutState.pauseStartTime
+                        });
+                        workoutState.isPaused = false;
+                        elements.pauseButton.textContent = 'Пауза';
+                        workoutState.timerInterval = setInterval(updateTimerDisplay, 1000);
+                    }
+
+                    function completeWorkout() {
+                        clearInterval(workoutState.timerInterval);
+
+                        // Якщо тренування не було розпочато коректно
+                        if (!workoutState.startTime) {
+                            workoutState.startTime = Date.now() - workoutState.totalWorkoutSeconds * 1000;
+                        }
+
+                        // Якщо тренування було на паузі, завершуємо паузу
+                        if (workoutState.isPaused) {
+                            const pauseEndTime = Date.now();
+                            workoutState.totalPausedTime += (pauseEndTime - workoutState.pauseStartTime);
+                            workoutState.pauses.push({
+                                start: workoutState.pauseStartTime,
+                                end: pauseEndTime,
+                                duration: pauseEndTime - workoutState.pauseStartTime
+                            });
+                            workoutState.isPaused = false;
+                        }
+
+                        workoutState.endTime = Date.now();
+
+                        // Розрахунок тривалості з урахуванням пауз
+                        workoutState.duration = Math.floor((workoutState.endTime - workoutState.startTime - workoutState.totalPausedTime) / 1000);
+
+                        // Визначаємо, чи тренування було завершене повністю
+                        workoutState.completed = workoutState.duration >= workoutState.totalWorkoutSeconds * 0.9; // 90% від запланованого
+
+                        // Розрахунок спалених калорій
+                        if (workoutState.totalWorkoutSeconds > 0) {
+                            workoutState.caloriesBurned = Math.floor(workoutState.totalWorkoutCalories * (workoutState.duration / workoutState.totalWorkoutSeconds));
+                        } else {
+                            // Якщо не вдалося розрахувати загальну тривалість
+                            workoutState.caloriesBurned = Math.floor(workoutState.duration / 60 * 10 * (workoutState.weight / 70));
+                        }
+
+                        showWorkoutSummary();
+                        elements.workoutCompleteModal.show();
+                    }
+
+                    // Відображення даних
+                    function updateTimerDisplay() {
+                        if (workoutState.isPaused) return;
+
+                        const elapsedSeconds = Math.floor((Date.now() - workoutState.startTime - workoutState.totalPausedTime) / 1000);
+                        const remainingSeconds = Math.max(0, workoutState.totalWorkoutSeconds - elapsedSeconds);
+                        const caloriesBurned = Math.floor(workoutState.totalWorkoutCalories * (elapsedSeconds / workoutState.totalWorkoutSeconds));
+
+                        if (remainingSeconds <= 0) {
+                            elements.startButton.textContent = `Завершити | ${workoutState.totalWorkoutCalories} ккал`;
+                            completeWorkout();
+                        } else {
+                            elements.startButton.textContent = `Зупинити (${formatTime(remainingSeconds)}) | ${caloriesBurned} ккал`;
+                        }
+                    }
+
+                    function showWorkoutSummary() {
+                        const formattedMinutes = formatMinutes(workoutState.duration / 60);
+                        const intensity = workoutState.duration > 0 ?
+                            (workoutState.caloriesBurned / (workoutState.duration / 60)).toFixed(1) : 0;
+
+                        let completionMessage = workoutState.completed
+                            ? "Вітаємо! Ви успішно завершили тренування!"
+                            : "Тренування не завершено повністю, але дані збережено!";
+
+                        let alertClass = workoutState.completed ? "alert-success" : "alert-warning";
+
+                        elements.workoutSummary.innerHTML = `
+                        <p><strong>Тривалість:</strong> ${formattedMinutes}</p>
+                        <p><strong>Спалено калорій:</strong> ${workoutState.caloriesBurned} ккал</p>
+                        <p><strong>Середня інтенсивність:</strong> ${intensity} ккал/хв</p>
+                        <div class="alert ${alertClass} mt-3">
+                            ${completionMessage}
+                        </div>
+                `;
+                    }
+
+                    // Допоміжні функції
+                    function formatTime(seconds) {
+                        const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+                        const secs = String(seconds % 60).padStart(2, '0');
+                        return `${minutes}:${secs}`;
+                    }
+
+                    function formatMinutes(minutes) {
+                        const hrs = Math.floor(minutes / 60);
+                        const mins = Math.round(minutes % 60);
+                        return `${hrs > 0 ? hrs + ' год ' : ''}${mins} хв`;
+                    }
+
+                    // Збереження та скидання стану
+                    async function saveWorkoutData() {
+                        const workoutData = {
+                            id: workoutState.id,
+                            startTime: workoutState.startTime,
+                            endTime: workoutState.endTime,
+                            duration: workoutState.duration,
+                            caloriesBurned: workoutState.caloriesBurned,
+                            weight: workoutState.weight,
+                            pauses: workoutState.pauses,
+                            exercises: JSON.parse(localStorage.getItem('userExercisePlan')) || [],
+                            completed: workoutState.completed
+                        };
+
+                        // Зберігаємо в localStorage
+                        const workoutsHistory = JSON.parse(localStorage.getItem('workoutsHistory')) || [];
+                        workoutsHistory.push(workoutData);
+                        localStorage.setItem('workoutsHistory', JSON.stringify(workoutsHistory));
+
+                        // Відправляємо на сервер
+                        try {
+                            const response = await fetch(`/api/workouts/end/${workoutState.id}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify(workoutData)
+                            });
+
+                            if (!response.ok) throw new Error('Помилка сервера');
+
+                            const result = await response.json();
+
+                            if (!result.success) {
+                                console.error('Помилка збереження:', result.message);
+                            }
+                        } catch (error) {
+                            console.error('Помилка:', error);
+                        }
+                    }
+                    function resetWorkoutState() {
+                        elements.startButton.textContent = 'Розпочати заняття';
+                        elements.startButton.classList.remove('btn-danger');
+                        elements.startButton.classList.add('btn-grad');
+                        elements.pauseButton.style.display = 'none';
+                        elements.weightInput.disabled = false;
+
+                        clearInterval(workoutState.timerInterval);
+                        workoutState.timerInterval = null;
+                        workoutState.isPaused = false;
+                        workoutState.pauseStartTime = null;
+                        workoutState.totalPausedTime = 0;
+
+                        // Очищаємо стан тренування, але зберігаємо загальні дані про тривалість і калорії
+                        workoutState.id = null;
+                        workoutState.startTime = null;
+                        workoutState.endTime = null;
+                        workoutState.duration = 0;
+                        workoutState.caloriesBurned = 0;
+                        workoutState.pauses = [];
+                        workoutState.completed = false;
+                    }
+
+                    // Рендеринг списків
+                    function renderExercises(exerciseList) {
+                        elements.exercisesList.innerHTML = exerciseList.length ?
+                            exerciseList.map(ex => createExerciseElement(ex)).join('') :
+                            '<div class="alert alert-info m-3">У вас ще немає планів тренувань</div>';
+                    }
+
+                    function renderDiet(dietList) {
+                        elements.dietContainer.innerHTML = dietList.length ?
+                            dietList.map(meal => createDietElement(meal)).join('') :
+                            '<div class="alert alert-info m-3">У вас ще немає плану харчування</div>';
+                    }
+
+                    function generateUniqueId(prefix) {
+                        return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+                    }
+
+                    function createExerciseElement(exercise, index) {
+                        const youtubeId = exercise.video ?
+                            exercise.video.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|&v=))([^#&?]*)/)?.[1] : null;
+
+                        const uniqueId = generateUniqueId(`ex-${index}`);
+
+                        return `
+                    <div class="accordion-item exercise-entry">
+                        <div class="accordion-header d-flex justify-content-between align-items-center p-3 bg-light" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#${uniqueId}">
+                            <span class="accordion-title fw-bold">${exercise.name}</span>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning text-dark me-2">${exercise.duration || exercise.time || 0} </span>
+                                <span class="badge bg-danger me-2">${exercise.calories || exercise.energy || 0} </span>
+                                <span class="accordion-icon ms-2">▼</span>
+                            </div>
+                        </div>
+                        <div id="${uniqueId}" class="accordion-collapse collapse" data-bs-parent="#exercises-list">
+                            <div class="accordion-body bg-light">
+                                <h5 class="text-center mb-3">${exercise.name}</h5>
+                                
+                                ${exercise.description ? `<p class="description-text mb-3">${exercise.description}</p>` : ''}
+                                
+                                ${exercise.image ? `
+                                <div class="mb-3">
+                                    <img src="${exercise.image}" alt="${exercise.name}" class="img-fluid rounded shadow">
+                                </div>` : ''}
+                                
+                                ${youtubeId ? `
+                                <div class="ratio ratio-16x9 mb-3">
+                                    <iframe src="https://www.youtube.com/embed/${youtubeId}" 
+                                            title="${exercise.name}" 
+                                            allowfullscreen></iframe>
+                                </div>` : ''}
+                                
+                                <div class="exercise-info mb-3 p-3 bg-white rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Деталі тренування</h5>
+                                    <div class="row">
+                                        <div class="col-md-6"><strong>Тип:</strong> ${exercise.type || 'Не вказано'}</div>
+                                        <div class="col-md-6"><strong>Складність:</strong> ${exercise.difficulty || 'Середня'}</div>
+                                        <div class="col-md-6"><strong>Обладнання:</strong> ${exercise.equipment || 'Не потрібно'}</div>
+                                        <div class="col-md-6"><strong>М'язи:</strong> ${exercise.muscles || 'Різні'}</div>
+                                        <div class="col-md-6"><strong>Час:</strong> ${exercise.duration || exercise.time || 0} хв</div>
+                                        <div class="col-md-6"><strong>Калорії:</strong> ${exercise.calories || exercise.energy || 0}</div>
+                                    </div>
+                                </div>
+                                
+                                ${exercise.steps && exercise.steps.length > 0 ? `
+                                <div class="steps mb-3 p-3 bg-white rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Техніка виконання</h5>
+                                    <div class="steps-list">
+                                        ${exercise.steps.map((step, i) => `
+                                            <div class="d-flex mb-2">
+                                                <span class="badge bg-primary me-2">${i + 1}</span>
+                                                <span>${step}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>` : ''}
+                                
+                                ${exercise.tips ? `
+                                <div class="tips p-3 bg-info bg-opacity-10 rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Корисні поради</h5>
+                                    <p>${exercise.tips}</p>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    }
+
+                    function createDietElement(meal, index) {
+                        const youtubeId = meal.video ?
+                            meal.video.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|&v=))([^#&?]*)/)?.[1] : null;
+
+                        const uniqueId = generateUniqueId(`diet-${index}`);
+
+                        return `
+                    <div class="accordion-item exercise-entry">
+                        <div class="accordion-header d-flex justify-content-between align-items-center p-3 bg-light" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#${uniqueId}">
+                            <span class="accordion-title fw-bold">${meal.name}</span>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">${meal.macros?.calories || meal.energy || 0} ккал</span>
+                                <span class="accordion-icon ms-2">▼</span>
+                            </div>
+                        </div>
+                        <div id="${uniqueId}" class="accordion-collapse collapse" data-bs-parent="#diet-container">
+                            <div class="accordion-body bg-light">
+                                <h5 class="text-center mb-3">${meal.name}</h5>
+                                
+                                ${meal.description ? `<p class="description-text mb-3">${meal.description}</p>` : ''}
+                                
+                                ${meal.image ? `
+                                <div class="mb-3">
+                                    <img src="${meal.image}" alt="${meal.name}" class="img-fluid rounded shadow">
+                                </div>` : ''}
+                                
+                                ${youtubeId ? `
+                                <div class="ratio ratio-16x9 mb-3">
+                                    <iframe src="https://www.youtube.com/embed/${youtubeId}" 
+                                            title="${meal.name}" 
+                                            allowfullscreen></iframe>
+                                </div>` : ''}
+                                
+                                <div class="macros mb-3 p-3 bg-white rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Харчова цінність</h5>
+                                    <div class="row">
+                                        <div class="col-md-6"><strong>Білки:</strong> ${meal.macros?.protein || meal.protein || 0}</div>
+                                        <div class="col-md-6"><strong>Вуглеводи:</strong> ${meal.macros?.carbs || meal.carb || 0}</div>
+                                        <div class="col-md-6"><strong>Жири:</strong> ${meal.macros?.fat || meal.fat || 0}</div>
+                                        <div class="col-md-6"><strong>Калорії:</strong> ${meal.macros?.calories || meal.energy || 0}</div>
+                                    </div>
+                                </div>
+                                
+                                ${meal.ingredients && meal.ingredients.length > 0 ? `
+                                <div class="ingredients mb-3 p-3 bg-white rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Інгредієнти</h5>
+                                    <ul class="list-group list-group-flush">
+                                        ${meal.ingredients.map(ing => `<li class="list-group-item">${ing}</li>`).join('')}
+                                    </ul>
+                                </div>` : ''}
+                                
+                                ${meal.recipe ? `
+                                <div class="recipe mb-3 p-3 bg-white rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Рецепт приготування</h5>
+                                    <div class="recipe-steps">
+                                        ${typeof meal.recipe === 'string' ?
+                                    `<p>${meal.recipe}</p>` :
+                                    meal.recipe.map((step, i) => `
+                                            <div class="d-flex mb-2">
+                                                <span class="badge bg-primary me-2">${i + 1}</span>
+                                                <span>${step}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>` : ''}
+                                
+                                ${meal.tips ? `
+                                <div class="tips p-3 bg-info bg-opacity-10 rounded shadow-sm">
+                                    <h5 class="text-center mb-3">Корисні поради</h5>
+                                    <p>${meal.tips}</p>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    }
+
+                    init();
+                });
+            </script>
+
+<%- include("./partials/footer") %>
+</body>
+</html>

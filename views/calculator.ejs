@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%-	include	("./partials/head", {title: "Розрахунок ІМТ"})	%>
+</head>
+
+<body>
+    <%- include ("./partials/userbar") %>
+    <%- include ("./partials/header", { active: 3}) %>
+
+    <div class="container">
+        <div class="calculator-container my-4 bg-white">
+    
+            <h2>Калькулятор КБЖВ</h2>
+    
+            <div class="mb-3">
+                <label for="weight" class="form-label">Вага (кг):</label>
+                <input type="number" class="form-control" id="weight" required>
+            </div>
+    
+            <div class="mb-3">
+                <label for="height" class="form-label">Зріст (см):</label>
+                <input type="number" class="form-control" id="height" required>
+            </div>
+    
+            <div class="mb-3">
+                <label for="age" class="form-label">Вік:</label>
+                <input type="number" class="form-control" id="age" required>
+            </div>
+    
+            <div class="mb-3">
+                <label for="gender" class="form-label">Стать:</label>
+                <select class="form-select" id="gender">
+                    <option value="male">Чоловік</option>
+                    <option value="female">Жінка</option>
+                </select>
+            </div>
+    
+            <div class="mb-3">
+                <label for="activity" class="form-label">Рівень активності:</label>
+                <select class="form-select" id="activity">
+                    <option value="1.2">Мінімальна (сидячий спосіб життя)</option>
+                    <option value="1.375">Легка активність (1-3 тренування на тиждень)</option>
+                    <option value="1.55" selected>Середня активність (3-5 тренувань)</option>
+                    <option value="1.725">Висока активність (6-7 тренувань)</option>
+                    <option value="1.9">Екстремальна активність (спортсмени)</option>
+                </select>
+            </div>
+    
+            <div class="mb-3">
+                <label for="goal" class="form-label">Мета:</label>
+                <select class="form-select" id="goal">
+                    <option value="-0.2">Схуднення</option>
+                    <option value="0" selected>Підтримка ваги</option>
+                    <option value="0.2">Набір маси</option>
+                </select>
+            </div>
+    
+            <button class="btn btn-primary btn-calculate w-100" onclick="calculateCalories()">Розрахувати</button>
+    
+            <div class="result-box mt-4" id="result-box" style="display: none;">
+                <h4 class="text-center mb-3">Рекомендації</h4>
+                <div id="result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function calculateCalories() {
+            // Отримуємо значення з форми
+            let weight = parseFloat(document.getElementById("weight").value);
+            let height = parseFloat(document.getElementById("height").value);
+            let age = parseInt(document.getElementById("age").value);
+            let gender = document.getElementById("gender").value;
+            let activity = parseFloat(document.getElementById("activity").value);
+            let goal = parseFloat(document.getElementById("goal").value);
+
+            // Перевірка введених даних
+            if (isNaN(weight) || isNaN(height) || isNaN(age)) {
+                alert("Будь ласка, заповніть всі поля коректно!");
+                return;
+            }
+
+            // Розрахунок базового метаболізму (BMR)
+            let bmr;
+            if (gender === "male") {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+
+            // Розрахунок калорій та БЖУ
+            let maintenanceCalories = bmr * activity;
+            let goalCalories = maintenanceCalories * (1 + goal);
+            let proteins = (goalCalories * 0.3) / 4; //30% від калорій, 4 ккал/г
+            let fats = (goalCalories * 0.25) / 9; //25% від калорій, 9 ккал/г
+            let carbs = (goalCalories * 0.45) / 4; //45% від калорій, 4 ккал/г
+
+            // Форматуємо висновок
+            document.getElementById("result").innerHTML = `
+                <p><strong>Добова норма калорій:</strong> ${goalCalories.toFixed(0)} ккал</p>
+                <p><strong>Білки:</strong> ${proteins.toFixed(1)} г (30%)</p>
+                <p><strong>Жири:</strong> ${fats.toFixed(1)} г (25%)</p>
+                <p><strong>Вуглеводи:</strong> ${carbs.toFixed(1)} г (45%)</p>
+                <hr>
+                <p class="text-muted small">*Розрахунки приблизні. Для точних рекомендацій зверніться до дієтолога.</p>
+                `;
+
+            document.getElementById("result-box").style.display = "block";
+        }
+    </script>
+
+    <%- include ("./partials/footer") %>
+</body>
+</html>

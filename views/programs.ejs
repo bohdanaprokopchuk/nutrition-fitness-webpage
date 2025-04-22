@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <%- include("./partials/head", {title: "Тренування" }) %>
+  </head>
+
+<body class="programs">
+  <%- include("./partials/userbar") %>
+  <%- include("./partials/header", { active: 4}) %>
+
+  <section class="action-navbar">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12 d-flex my-1 justify-content-center">
+          <% if (user) { %>
+            <div class="text-center">
+              <button id="saveplan" class="btn-grad saveplan">
+                <i class="fa-solid fa-floppy-disk"></i> Зберегти
+              </button>
+            </div>
+            <% } else { %>
+              <div class="col-md-12 d-flex my-1 py-1 justify-content-center">
+                <a href="/auth/login" class="btn-grad mx-1 saveplan">
+                  <i class="fa-solid fa-floppy-disk"></i> Зберегти
+                </a>
+              </div>
+              <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <div class="container programs-creator my-5">
+    <h1 class="text-center mb-4">Вибір вправ для вашого тренування</h1>
+    <h5 class="text-center mb-5">
+      Оберіть вправи, які найкраще підходять для досягнення вашої мети. Вони будуть додані до вашого
+      індивідуального плану та завжди доступні на <a href="/my-programs">сторінці</a>.
+    </h5>
+  
+    <ul class="nav nav-tabs mb-4" id="exercisesTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="gym-tab" data-bs-toggle="tab" data-bs-target="#gym" type="button"
+          role="tab">Спортзал
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button"
+          role="tab">Домашні вправи
+        </button>
+      </li>
+    </ul>
+  
+    <div class="tab-content" id="exercisesTabContent">
+      <div class="tab-pane fade show active" id="gym" role="tabpanel">
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+              <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Усі вправи</h3>
+              </div>
+              <div class="card-body p-0">
+                <div id="gym-exercises-list" class="accordion">
+                  <div class="text-center p-4">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+              <div class="card-header bg-success text-white">
+                <h3 class="mb-0"></i>Мій план</h3>
+              </div>
+              <div class="card-body p-0">
+                <div id="user-plan-list-gym" class="accordion p-3">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="tab-pane fade" id="home" role="tabpanel">
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+              <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Домашні вправи</h3>
+              </div>
+              <div class="card-body p-0">
+                <div id="home-exercises-list" class="accordion">
+                  <div class="text-center p-4">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+              <div class="card-header bg-success text-white">
+                <h3 class="mb-0"></i>Мій план</h3>
+              </div>
+              <div class="card-body p-0">
+                <div id="user-plan-list-home" class="accordion p-3">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      // Завантаження даних про тренування
+      async function loadExercisesData() {
+        try {
+          const response = await fetch('/data/exercises-data.json');
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const data = await response.json();
+
+          // Додаємо категорію до кожної вправи
+          for (const category in data.gymExercises) {
+            for (const subCategory in data.gymExercises[category]) {
+              data.gymExercises[category][subCategory].forEach(ex => {
+                ex.category = 'Спортзал';
+              });
+            }
+          }
+
+          for (const category in data.homeExercises) {
+            for (const subCategory in data.homeExercises[category]) {
+              data.homeExercises[category][subCategory].forEach(ex => {
+                ex.category = 'Домашні вправи';
+              });
+            }
+          }
+
+          return data;
+        } catch (error) {
+          console.error('Помилка завантаження даних:', error);
+          return null;
+        }
+      }
+
+      // Lazy loading для зображень
+      const lazyLoadImages = () => {
+        const imageObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              img.classList.add('loaded');
+              imageObserver.unobserve(img);
+            }
+          });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('img[data-src]').forEach(img => imageObserver.observe(img));
+      };
+
+      // Lazy loading для відео
+      const lazyLoadVideos = () => {
+        const videoObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const container = entry.target;
+              const videoId = container.dataset.videoId;
+              const iframe = document.createElement('iframe');
+
+              iframe.className = 'exercise-video';
+              iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+              iframe.setAttribute('allowfullscreen', '');
+              iframe.setAttribute('loading', 'lazy');
+
+              container.replaceWith(iframe);
+              videoObserver.unobserve(container);
+            }
+          });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.video-placeholder').forEach(container => videoObserver.observe(container));
+      };
+
+      // Функція для отримання ID відео з YouTube URL
+      const extractYouTubeId = (url) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+      };
+
+      // Функція для створення міток обладнання
+      const createEquipmentBadges = (equipment) => {
+        if (!equipment || equipment.length === 0) return '<span class="badge bg-secondary">Без обладнання</span>';
+        return equipment.map(item =>
+          `<span class="badge bg-info text-dark me-1 mb-1">${item}</span>`
+        ).join('');
+      };
+
+      // Оновлення стану пустого плану
+      function updateEmptyState(containerId) {
+        const container = document.getElementById(containerId);
+        if (container.children.length === 0) {
+          container.innerHTML = `
+                  `;
+        }
+      }
+
+      // Функція для створення елемента вправи
+      const createExerciseElement = (exercise, isUserPlan = false, targetContainer) => {
+        const exerciseData = JSON.parse(JSON.stringify(exercise));
+
+        const element = document.createElement('div');
+        element.className = `accordion-item exercise-entry ${isUserPlan ? 'selected' : ''}`;
+        element.dataset.name = exerciseData.name;
+        element.dataset.category = targetContainer;
+
+        const videoId = exerciseData.video ? extractYouTubeId(exerciseData.video) : null;
+        const uniqueId = `${exerciseData.name.replace(/\s+/g, '-')}-${targetContainer}-${Math.random().toString(36).substr(2, 9)}`;
+
+        element.innerHTML = `
+        <div class="accordion-header d-flex justify-content-between align-items-center p-3" 
+           data-bs-toggle="collapse" 
+           data-bs-target="#collapse-${uniqueId}">
+        <div class="d-flex align-items-center">
+          <span class="accordion-title fw-bold me-3">${exerciseData.name}</span>
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-warning text-dark me-2">${exerciseData.time}</span>
+          <span class="badge energy-badge me-2">${exerciseData.energy}</span>
+          <button class="btn btn-sm ${isUserPlan ? 'btn-outline-danger' : 'btn-outline-primary'} ms-2">
+            ${isUserPlan ? '−' : '+'}
+          </button>
+          <span class="accordion-icon ms-2">▼</span>
+        </div>
+      </div>
+      <div id="collapse-${uniqueId}" 
+           class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <div class="description">
+            <h5 class="text-center mb-3">${exerciseData.name}</h5>
+            <p class="description-text mb-3">${exerciseData.description}</p>
+            <div class="muscle-group mb-3">
+              <strong>Група м'язів:</strong> ${exerciseData.muscleGroup}
+            </div>
+            <div class="equipment mb-3">
+              <strong>Обладнання:</strong> 
+              ${createEquipmentBadges(exerciseData.equipment)}
+            </div>
+            <div class="row">
+              ${exerciseData.image ? `
+              <div class="col-md-6 mb-3">
+                <img src="${exerciseData.image}" alt="${exerciseData.name}" class="exercise-img img-fluid rounded">
+              </div>` : ''}
+              ${videoId ? `
+              <div class="col-md-6 mb-3">
+                <div class="ratio ratio-16x9">
+                  <iframe class="exercise-video" src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" 
+                    allowfullscreen loading="lazy"></iframe>
+                </div>
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+        const btn = element.querySelector('button');
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          const exerciseIndex = userPlan.findIndex(item =>
+            item.name === exerciseData.name && item.category === exerciseData.category
+          );
+
+          const planContainer = targetContainer === 'gym'
+            ? document.getElementById('user-plan-list-gym')
+            : document.getElementById('user-plan-list-home');
+
+          if (exerciseIndex !== -1) {
+            userPlan.splice(exerciseIndex, 1);
+            const planItem = planContainer.querySelector(`[data-name="${exerciseData.name}"]`);
+            if (planItem) planItem.remove();
+          } else {
+            userPlan.push(exerciseData);
+            const newExerciseElement = createExerciseElement(exerciseData, true, targetContainer);
+            planContainer.appendChild(newExerciseElement);
+          }
+
+          document.querySelectorAll(`[data-name="${exerciseData.name}"][data-category="${targetContainer}"]`).forEach(el => {
+            const btn = el.querySelector('button');
+            if (btn) {
+              btn.className = `btn btn-sm ${exerciseIndex === -1 ? 'btn-outline-danger' : 'btn-outline-primary'}`;
+              btn.innerHTML = exerciseIndex === -1 ? '−' : '+';
+            }
+            el.classList.toggle('selected', exerciseIndex === -1);
+          });
+
+          localStorage.setItem('userExercisePlan', JSON.stringify(userPlan));
+          updateEmptyState(planContainer.id);
+        });
+
+        return element;
+      };
+
+      // Функція для відображення вправ
+      const renderExercises = (exercisesData, containerId, targetContainer) => {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        if (!exercisesData) {
+          container.innerHTML = `
+                    <div class="alert alert-danger m-3">
+                      <i class="fas fa-exclamation-triangle me-2"></i>
+                      Не вдалося завантажити дані вправ. Спробуйте оновити сторінку.
+                    </div>
+                  `;
+          return;
+        }
+
+        const categories = targetContainer === 'gym'
+          ? exercisesData.gymExercises
+          : exercisesData.homeExercises;
+
+        for (const mainCategory in categories) {
+          const groupBlock = document.createElement('div');
+          groupBlock.className = 'exercise-group border-bottom';
+
+          const groupTitle = document.createElement('div');
+          groupTitle.className = 'p-3 bg-light';
+          groupTitle.innerHTML = `<h4 class="mb-0">${mainCategory}</h4>`;
+          groupBlock.appendChild(groupTitle);
+
+          for (const subCategory in categories[mainCategory]) {
+            const categoryWrapper = document.createElement('div');
+            categoryWrapper.className = 'exercise-category';
+
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'd-flex justify-content-between align-items-center p-3 bg-light';
+
+            const categoryTitle = document.createElement('h5');
+            categoryTitle.className = 'mb-0';
+            categoryTitle.textContent = subCategory;
+
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'btn btn-sm btn-outline-primary';
+            toggleButton.textContent = '+ Всі';
+            toggleButton.dataset.category = subCategory;
+
+            toggleButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const exercises = categories[mainCategory][subCategory];
+              const allInPlan = exercises.every(ex =>
+                userPlan.some(item =>
+                  item.name === ex.name && item.category === ex.category
+                )
+              );
+
+              const planContainer = targetContainer === 'gym'
+                ? document.getElementById('user-plan-list-gym')
+                : document.getElementById('user-plan-list-home');
+
+              if (allInPlan) {
+                exercises.forEach(ex => {
+                  userPlan = userPlan.filter(item =>
+                    !(item.name === ex.name && item.category === ex.category)
+                  );
+                  const planItem = planContainer.querySelector(`[data-name="${ex.name}"]`);
+                  if (planItem) planItem.remove();
+                });
+                toggleButton.textContent = '+ Всі';
+              } else {
+                exercises.forEach(ex => {
+                  if (!userPlan.some(item =>
+                    item.name === ex.name && item.category === ex.category
+                  )) {
+                    // Додаємо повний об'єкт вправи
+                    userPlan.push(JSON.parse(JSON.stringify(ex)));
+                    const newElement = createExerciseElement(ex, true, targetContainer);
+                    planContainer.appendChild(newElement);
+                  }
+                });
+                toggleButton.textContent = '- Всі';
+              }
+
+              // Оновлюємо стан кнопок
+              document.querySelectorAll(`[data-category="${targetContainer}"]`).forEach(el => {
+                const name = el.dataset.name;
+                const shouldBeSelected = exercises.some(ex =>
+                  ex.name === name && userPlan.some(item =>
+                    item.name === name && item.category === ex.category
+                  )
+                );
+                el.classList.toggle('selected', shouldBeSelected);
+              });
+
+              localStorage.setItem('userExercisePlan', JSON.stringify(userPlan));
+              updateEmptyState(planContainer.id);
+            });
+
+            categoryHeader.appendChild(categoryTitle);
+            categoryHeader.appendChild(toggleButton);
+            categoryWrapper.appendChild(categoryHeader);
+
+            categories[mainCategory][subCategory].forEach(exercise => {
+              exercise.category = targetContainer === 'gym' ? 'Спортзал' : 'Домашні вправи';
+              const exerciseEl = createExerciseElement(exercise, false, targetContainer);
+              categoryWrapper.appendChild(exerciseEl);
+            });
+
+            groupBlock.appendChild(categoryWrapper);
+          }
+
+          container.appendChild(groupBlock);
+        }
+      };
+
+      // Збереження плану
+      document.getElementById('saveplan')?.addEventListener('click', async function () {
+        if (userPlan.length === 0) {
+          showAlert('warning', 'Ваш план тренувань порожній. Додайте вправи перед збереженням.');
+          return;
+        }
+
+        try {
+          // Зберігаємо в localStorage
+          localStorage.setItem('userExercisePlan', JSON.stringify(userPlan));
+
+          // Відправляємо на сервер
+          const response = await fetch('/api/save-exercise-plan', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            },
+            body: JSON.stringify({ planData: userPlan }),
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const result = await response.json();
+
+          if (result.success) {
+            showAlert('success', 'План тренувань успішно збережено на сервері!');
+          } else {
+            showAlert('danger', result.message || 'Сталася помилка при збереженні');
+          }
+        } catch (error) {
+          console.error('Помилка при збереженні плану:', error);
+          showAlert('danger', 'Не вдалося зберегти план. Спробуйте ще раз.');
+        }
+      });
+
+      // Ініціалізація
+      let userPlan = JSON.parse(localStorage.getItem('userExercisePlan')) || [];
+      const exercisesData = await loadExercisesData();
+
+      if (exercisesData) {
+        // Рендер вправ для спортзалу
+        renderExercises(exercisesData, 'gym-exercises-list', 'gym');
+
+        // Рендер вправ для домашніх тренувань
+        renderExercises(exercisesData, 'home-exercises-list', 'home');
+
+        // Відобразити збережений план
+        userPlan.forEach(exercise => {
+          const targetContainer = exercise.category === 'Спортзал' ? 'gym' : 'home';
+          const planContainer = targetContainer === 'gym'
+            ? document.getElementById('user-plan-list-gym')
+            : document.getElementById('user-plan-list-home');
+
+          if (planContainer.querySelector(`[data-name="${exercise.name}"]`) === null) {
+            planContainer.appendChild(createExerciseElement(exercise, true, targetContainer));
+          }
+        });
+
+        // Оновити стан пустих контейнерів
+        updateEmptyState('user-plan-list-gym');
+        updateEmptyState('user-plan-list-home');
+
+        // Ініціалізація акордіону
+        document.querySelectorAll('.accordion-header').forEach(item => {
+          item.addEventListener('click', function () {
+            const icon = this.querySelector('.accordion-icon');
+            if (icon) {
+              const isCollapsed = this.getAttribute('aria-expanded') === 'true';
+              icon.textContent = isCollapsed ? '▼' : '▲';
+            }
+          });
+        });
+
+        lazyLoadImages();
+        lazyLoadVideos();
+      }
+    });
+  </script>
+  <%- include("./partials/footer") %>
+</body>
+</html>
+

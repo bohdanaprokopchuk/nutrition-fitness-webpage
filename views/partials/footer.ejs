@@ -1,0 +1,111 @@
+<footer class="footer py-5"
+  style="background: #343a40; color: #ffffff; font-family: 'Poppins', sans-serif; border-top: 3px solid #007bff; margin-top: 30px;">
+  <div class="container">
+    <div class="row">
+
+      <!-- Мотивація -->
+      <div class="col-md-4 mb-3">
+        <h5 class="text-primary fw-bold fs-6"><i class="fas fa-dumbbell me-2"></i>FITNESS</h5>
+        <p class="text-muted fs-7 pt-3">
+          Кожен крок до мети — це крок до кращої версії себе. Не зупиняйся, твоя сила — у прагненні!
+        </p>
+      </div>
+
+      <!-- Навігація -->
+      <div class="col-md-4 mb-3">
+        <h6 class="text-primary fw-bold fs-6">Швидкі посилання</h6>
+        <ul class="list-unstyled">
+          <li><a href="/" class="text-light text-decoration-none fs-7">🏠 Головна</a></li>
+          <li><a href="/blog" class="text-light text-decoration-none fs-7">📚 Статті</a></li>
+          <li><a href="/calculator" class="text-light text-decoration-none fs-7">🧮 Калькулятор</a></li>
+          <li><a href="/programs" class="text-light text-decoration-none fs-7">💪 Програми</a></li>
+          <li><a href="/nutrition" class="text-light text-decoration-none fs-7">🥗 Харчування</a></li>
+          <li><a href="/locator" class="text-light text-decoration-none fs-7">🗺️ Мапа залів</a></li>
+        </ul>
+      </div>
+
+      <!-- Зв'язатися -->
+      <div class="col-md-4 mb-3">
+        <h6 class="text-primary fw-bold fs-6">Напишіть нам</h6>
+        <form id="feedbackForm" action="/feedback" method="POST">
+          <input type="email" name="email" id="email" class="form-control mb-2" placeholder="Email" required>
+          <textarea name="message" id="message" class="form-control mb-2" rows="2" placeholder="Повідомлення"
+            required></textarea>
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+           Надіслати
+          </button>
+        </form>
+
+        <!-- Підтвердження надсилання повідомлення -->
+        <div id="confirmationMessage"
+          style="display:none; background-color: #28a745; color: white; padding: 10px; margin-top: 20px; border-radius: 5px;">
+          <strong>Дякуємо!</strong> Ми отримали ваше повідомлення.
+        </div>
+      </div>
+
+    </div>
+
+    <hr>
+    <div class="text-center text-muted small pt-1">
+      &copy;
+      <script>document.write(new Date().getFullYear());</script> FITNESS. Усі права захищені.
+    </div>
+  </div>
+
+  <script>
+    // Обробка надсилання форми за допомогою AJAX
+    document.getElementById("feedbackForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const message = document.getElementById("message").value;
+
+      // Надіслати запит до API для відправки відгуку
+      fetch("/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, message })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById("confirmationMessage").style.display = "block";
+            document.getElementById("feedbackForm").reset();
+          } else {
+            alert("Щось пішло не так, будь ласка, спробуйте пізніше.");
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("Сталася помилка. Будь ласка, спробуйте пізніше.");
+        });
+    });
+  </script>
+
+</footer>
+
+<!-- loader -->
+<div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/jquery-migrate-3.0.1.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/jquery.easing.1.3.js"></script>
+<script src="js/jquery.waypoints.min.js"></script>
+<script src="js/jquery.stellar.min.js"></script>
+<script src="js/jquery.animateNumber.min.js"></script>
+<script src="js/bootstrap-datepicker.js"></script>
+<script src="js/jquery.timepicker.min.js"></script>
+<script src="js/owl.carousel.min.js"></script>
+<script src="js/jquery.magnific-popup.min.js"></script>
+<script src="js/scrollax.min.js"></script>
+<script src="js/main.js"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />

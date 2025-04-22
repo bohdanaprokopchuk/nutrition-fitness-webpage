@@ -1,0 +1,18 @@
+# Конфіденційні дані
+.env
+config.json
+*.key
+*.pem
+*.cert
+
+# Системні файли
+.DS_Store
+node_modules/
+dist/
+.idea/
+.vscode/
+
+# Логи та тимчасові файли
+*.log
+*.tmp
+*.temp

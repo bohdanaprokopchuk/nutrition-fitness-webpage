@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Категорія: <%= categoryName %></title>
+</head>
+<body>
+    <h1>Пости в категорії: <%= categoryName %></h1>
+
+    <% if (posts.length > 0) { %>
+        <ul>
+            <% posts.forEach(post => { %>
+                <li>
+                    <a href="/post/<%= post.id %>"><%= post.title %></a>
+                    <p><%= post.content %></p>
+                    <small>Дата: <%= post.date_created %></small>
+                </li>
+            <% }); %>
+        </ul>
+    <% } else { %>
+        <p>У цій категорії ще немає постів</p>
+    <% } %>
+
+    <a href="/">Назад до головної</a>
+</body>
+</html>

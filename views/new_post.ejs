@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="uk">
+    <head>
+        <%- include("./partials/head", {title: "Додати пост"}) %>
+    </head>
+
+<body>
+    <%- include("./partials/userbar") %>
+    <%- include("./partials/header", { active: 2}) %>
+    
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-8">
+                <h1 class="mb-4 text-center">Додати пост</h1>
+                
+                <form action="/new-post" method="POST" enctype="multipart/form-data" class="border p-4 rounded-3 shadow-sm bg-light">
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Назва:</label>
+                        <input 
+                            type="text" 
+                            name="title" 
+                            id="title" 
+                            class="form-control" 
+                            required
+                            placeholder="Введіть заголовок поста"
+                        >
+                    </div>
+        
+                    <div class="mb-3">
+                        <label for="editor" class="form-label fw-bold">Текст:</label>
+                        <textarea 
+                            name="content" 
+                            id="editor" 
+                            class="form-control d-none" 
+                            placeholder="Напишіть текст поста"
+                        ></textarea>
+                        <div id="toolbar-container"></div>
+                        <div id="editor-container" class="border p-3 bg-white rounded"></div>
+                    </div>
+        
+                    <div class="mb-3">
+                        <label for="category" class="form-label fw-bold">Категорія:</label>
+                        <select 
+                            name="category" 
+                            id="category" 
+                            class="form-select"
+                        >
+                            <% categories.forEach(category => { %>
+                                <option value="<%= category.id %>"><%= category.title %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+        
+                    <div class="mb-4">
+                        <label for="new_category" class="form-label fw-bold">Або нова категорія:</label>
+                        <input 
+                            type="text" 
+                            name="new_category" 
+                            id="new_category" 
+                            class="form-control" 
+                            placeholder="Введіть нову категорію"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="post_image" class="form-label fw-bold">Зображення:</label>
+                        <input 
+                            type="file" 
+                            name="post_image" 
+                            id="post_image" 
+                            class="form-control" 
+                            accept="image/*"
+                        >
+                        <div class="form-text">Максимальний розмір: 5MB. Дозволені формати: JPG, PNG, GIF.</div>
+                    </div>
+        
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-circle me-2"></i>Додати
+                        </button>
+                        <a href="/blog" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Назад
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Підключення CKEditor -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ініціалізація CKEditor
+            ClassicEditor
+                .create(document.querySelector('#editor-container'), {
+                    toolbar: {
+                        items: [
+                            'heading', '|',
+                            'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+                            'outdent', 'indent', '|',
+                            'blockQuote', 'insertTable', 'mediaEmbed',
+                            'undo', 'redo'
+                        ]
+                    },
+                    language: 'uk',
+                    licenseKey: '',
+                })
+                .then(editor => {
+                    window.editor = editor;
+                    
+                    // Синхронізація с hidden textarea перед відправленням форми
+                    document.querySelector('form').addEventListener('submit', function() {
+                        document.getElementById('editor').value = editor.getData();
+                    });
+                })
+                .catch(error => {
+                    console.error('Помилка при ініціалізації CKEditor:', error);
+                });
+        });
+    </script>
+
+<%- include("./partials/footer") %>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%- include("./partials/head", { title: "Мапа спортзалів" }) %>
+</head>
+
+<body>
+    <%- include("./partials/userbar") %>
+    <%- include("./partials/header", { active: 6 }) %>
+
+    <div class="container">
+        <h1>Мапа спортзалів</h1>
+        <div class="filter-bar">
+            <input type="text" id="keyword" placeholder="Назва, місто або адреса" style="flex: 2; min-width: 300px;">
+            <input type="number" id="minRating" placeholder="Мін. рейтинг (1–5)" step="0.1" min="0" max="5"
+                style="min-width: 160px; flex: 1;">
+            <button id="filterBtn">🔍 Застосувати</button>
+            <button id="nearMeBtn">📍 Поруч зі мною</button>
+        </div>
+        <div id="map"></div>
+    </div>
+    
+    <script>
+        let map;
+        let markers = [];
+        let service;
+        let geocoder;
+
+        function initMap() {
+            const kyiv = { lat: 50.4501, lng: 30.5234 };
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: kyiv,
+                zoom: 13,
+            });
+
+            geocoder = new google.maps.Geocoder();
+            service = new google.maps.places.PlacesService(map);
+
+            searchPlaces(0);
+        }
+
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+        }
+
+        function searchPlaces(minRating = 0, keyword = "спортзал") {
+            clearMarkers();
+
+            const request = {
+                location: map.getCenter(),
+                radius: 20000,
+                type: "gym",
+                keyword: keyword
+            };
+
+            service.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    const filtered = results.filter(p => (p.rating || 0) >= minRating);
+                    if (filtered.length === 0) {
+                        alert("Немає результатів із заданим рейтингом.");
+                    }
+                    addMarkers(filtered);
+                } else {
+                    alert("Нічого не знайдено або помилка: " + status);
+                }
+            });
+        }
+
+        function searchByText(query, location, minRating = 0) {
+            clearMarkers();
+
+            const request = {
+                location: location,
+                radius: 20000,
+                query: query,
+                type: "gym"
+            };
+
+            service.textSearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    const filtered = results.filter(p => (p.rating || 0) >= minRating);
+                    if (filtered.length === 0) {
+                        alert("Нічого не знайдено за назвою або рейтингом.");
+                    }
+                    addMarkers(filtered);
+                } else {
+                    alert("Пошук за текстом не дав результатів: " + status);
+                }
+            });
+        }
+
+        function geocodeAndSearch(query, minRating = 0) {
+            if (!query) {
+                searchPlaces(minRating);
+                return;
+            }
+
+            geocoder.geocode({ address: query }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    const location = results[0].geometry.location;
+                    map.setCenter(location);
+                    map.setZoom(14);
+                    searchByText(query, location, minRating);
+                } else {
+                    // Якщо не вдалося геокодувати — шукаємо як назву спортзалу
+                    searchByText(query, map.getCenter(), minRating);
+                }
+            });
+        }
+
+        function findNearbyGyms(minRating = 0) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                        map.setCenter(userLocation);
+                        map.setZoom(14);
+                        searchPlaces(minRating);
+                    },
+                    () => alert("Не вдалося визначити місцезнаходження.")
+                );
+            } else {
+                alert("Геолокація не підтримується вашим браузером.");
+            }
+        }
+
+        function addMarkers(places) {
+            places.forEach(place => {
+                const marker = new google.maps.Marker({
+                    map,
+                    position: place.geometry.location,
+                    title: place.name,
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                <div style="max-width: 400px;">
+                  <strong>${place.name}</strong><br>
+                  <span>${place.formatted_address || place.vicinity || "Адреса недоступна"}</span><br>
+                  Рейтинг: ${place.rating ?? "Немає"}
+                </div>
+              `
+                });
+
+                marker.addListener("click", () => {
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("filterBtn").addEventListener("click", () => {
+                const keyword = document.getElementById("keyword").value.trim();
+                const minRating = parseFloat(document.getElementById("minRating").value) || 0;
+                geocodeAndSearch(keyword, minRating);
+            });
+
+            document.getElementById("nearMeBtn").addEventListener("click", () => {
+                const minRating = parseFloat(document.getElementById("minRating").value) || 0;
+                findNearbyGyms(minRating);
+            });
+        });
+
+        window.initMap = initMap;
+    </script>
+
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=<%= apiKey %>&libraries=places,geometry&callback=initMap">
+    </script>
+
+
+<%- include("./partials/footer") %>
+</body>
+</html>

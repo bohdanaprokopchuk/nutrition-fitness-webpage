@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="uk">
+    <head>
+        <%- include("./partials/head", { title: "Статті " }) %>
+    </head>
+
+<body class="blog">
+    <%- include("./partials/userbar") %>
+    <%- include("./partials/header", { active: 2 }) %>
+
+    <% if (user && user.id===1) { %>
+        <section class="action-navbar">
+            <div class="conteiner-fluid">
+                <div class="row">
+                    <div class="col-md-12 d-flex my-1 justify-content-center">
+                        <div class="text-center">
+                            <a href="/new-post" class="btn btn-primary">Додати пост</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <% } %>
+    
+            <div class="container my-5">
+                <div class="row">
+                    <div class="col-12">
+                        <h1 class="mb-4">Блог</h1>
+    
+                        <div class="row">
+                            <% posts.forEach(post=> { %>
+                                <div class="col-12 col-md-4 mb-3 mb-md-0">
+                                    <div class="card h-100 post-card position-relative">
+    
+                                        <% if (user && user.id===1) { %>
+                                            <!-- Кнопка "Редагувати" зліва -->
+                                            <a href="/edit-post/<%= post.id %>"
+                                                class="admin-btn edit position-absolute top-0 start-0 m-2 z-1">
+                                                Редагувати
+                                            </a>
+    
+                                            <!-- Кнопка "Видалити" справа -->
+                                            <a href="#"
+                                                class="admin-btn delete position-absolute top-0 end-0 m-2 z-1 post-del"
+                                                title="Видалити" data-post-id="<%= post.id %>">
+                                                Видалити
+                                            </a>
+                                            <% } %>
+    
+                                                <div class="card-body">
+                                                    <% if (post.image_path) { %>
+                                                        <figure class="card-img-top m-0 overflow-hidden"
+                                                            style="height: 200px;">
+                                                            <a href="/post/<%= post.id %>">
+                                                                <img class="img-fluid w-100 h-100 object-fit-cover"
+                                                                    loading="lazy" src="<%= post.image_path %>"
+                                                                    alt="<%= post.title %>">
+                                                            </a>
+                                                        </figure>
+                                                        <% } %>
+    
+                                                            <span class="badge bg-secondary post-category my-2 p-2">
+                                                                <%= post.category %>
+                                                            </span>
+    
+                                                            <h5 class="card-title">
+                                                                <%= post.title %>
+                                                            </h5>
+    
+                                                            <p class="card-text">
+                                                                <%- post.content.substring(0, 100) %>...
+                                                            </p>
+    
+                                                            <div
+                                                                class="d-flex justify-content-between align-items-center mt-auto">
+                                                                <small class="post-date">
+                                                                    <%= post.date_created %>
+                                                                </small>
+                                                                <a href="/post/<%= post.id %>"
+                                                                    class="btn btn-sm btn-outline-primary">Читати
+                                                                    далі</a>
+                                                            </div>
+                                                </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <% if (user && user.id===1) { %>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.querySelectorAll('.post-del').forEach(button => {
+                            button.addEventListener('click', function (e) {
+                                e.preventDefault();
+                                const postId = this.getAttribute('data-post-id');
+
+                                if (confirm('Ви впевнені, що хочете видалити цей пост?')) {
+                                    fetch(`/post/${postId}`, {
+                                        method: 'DELETE',
+                                        credentials: 'same-origin'
+                                    })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data.success) {
+                                                const postElement = this.closest('.post-card');
+                                                if (postElement) {
+                                                    postElement.remove();
+                                                }
+                                                alert(data.message);
+                                            } else {
+                                                alert(data.message || 'Помилка при видаленні поста');
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            alert('Помилка з\'єднання з сервером');
+                                        });
+                                }
+                            });
+                        });
+                    });
+                </script>
+                <% } %>
+
+<%- include("./partials/footer") %>
+</body>
+</html>

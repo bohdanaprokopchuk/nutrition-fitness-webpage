@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/"><img src="/images/logo.png" alt="logo" width="120"></a>
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#ftco-nav"
+      aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span> Меню
+    </button>
+
+    <div class="collapse navbar-collapse" id="ftco-nav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item <%= active === 1 ? 'active' : '' %>"><a href="/" class="nav-link">Головна</a></li>
+        <li class="nav-item <%= active === 2 ? 'active' : '' %>"><a href="/blog" class="nav-link">Блог</a></li>
+        <li class="nav-item <%= active === 3 ? 'active' : '' %>"><a href="/calculator" class="nav-link">Калькулятор</a>
+        </li>
+        <li class="nav-item <%= active === 4 ? 'active' : '' %>"><a href="/programs" class="nav-link">Тренування</a>
+        </li>
+        <li class="nav-item <%= active === 5 ? 'active' : '' %>"><a href="/plans" class="nav-link">Харчування</a></li>
+        <li class="nav-item <%= active === 6 ? 'active' : '' %>"><a href="/locator" class="nav-link">Мапа залів</a></li>
+
+        <% if (user) { %>
+          <li class="nav-item <%= active === 7 ? 'active' : '' %>"><a href="/my-programs" class="nav-link">Моя
+              програма</a></li>
+          <li class="nav-item <%= active === 8 ? 'active' : '' %>"><a href="/analyze" class="nav-link">Аналіз</a></li>
+          <% } %>
+      </ul>
+    </div>
+  </div>
+</nav>

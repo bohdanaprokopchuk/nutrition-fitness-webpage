@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%-	include	("./partials/head", {title: "Блог"}) %>
+</head>
+
+<body>
+    <%- include ("./partials/userbar") %>
+    <%- include ("./partials/header") %>
+    <h1>Блог</h1>
+    <ul>
+        <% posts.forEach(post=> {%>
+            <li>
+                <a href="/post/<%= post.id %>">
+                    <%= post.title %>
+                </a> (Категорія: <%= post.category %>)
+                    <br>Дата: <%= post.date_created %>
+            </li>
+            <%}); %>
+    </ul>
+    <a href="/new-post">Додати пост</a>
+
+    <%- include ("./partials/footer") %>
+</body>
+</html>
+

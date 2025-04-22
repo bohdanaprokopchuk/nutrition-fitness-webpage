@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%- include("./partials/head", {title: "Аналітика тренувань та харчування" }) %>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="analyze">
+    <%- include("./partials/userbar") %>
+        <%- include("./partials/header", { active: 8}) %>
+
+            <div class="container my-5">
+                <h1 class="mb-4">Щоденна аналітика ваших тренувань та харчування</h1>
+
+                <!-- Вибор періоду -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <select id="period-select" class="form-select">
+                            <option value="week">Останній тиждень</option>
+                            <option value="month">Останній місяць</option>
+                            <option value="all">Весь період</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Споживання КБЖВ</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="nutrition-chart" height="250"></canvas>
+                                <div class="mt-3" id="nutrition-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Баланс калорій</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="calories-chart" height="250"></canvas>
+                                <div class="mt-3" id="calories-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графік частоти тренувань -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Частота та тривалість тренувань</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="frequency-chart" height="150"></canvas>
+                                <div class="mt-3" id="frequency-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Функція для відображення повідомлень
+                    function showAlert(type, message) {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert alert-${type} fixed-top mx-auto mt-3`;
+                        alertDiv.style.maxWidth = '500px';
+                        alertDiv.style.zIndex = '1060';
+                        alertDiv.textContent = message;
+
+                        document.body.appendChild(alertDiv);
+                        setTimeout(() => alertDiv.remove(), 5000);
+                    }
+
+                    // Функція для отримання історії тренувань з API
+                    async function getWorkoutHistory() {
+                        try {
+                            const response = await fetch('/api/workouts/history');
+                            if (!response.ok) throw new Error('Не вдалося отримати історію тренувань');
+                            const data = await response.json();
+                            return Array.isArray(data) ? data : [];
+                        } catch (error) {
+                            console.error('Помилка при отриманні історії тренувань:', error);
+                            return [];
+                        }
+                    }
+
+                    // Функція для перетворення текстового формату тривалості у хвилини
+                    function durationToMinutes(duration) {
+                        if (!duration) return 0;
+                        if (typeof duration === 'number') return duration;
+
+                        if (typeof duration === 'string' && duration.includes(':')) {
+                            const parts = duration.split(':');
+                            if (parts.length === 2) {
+                                const hours = parseInt(parts[0]) || 0;
+                                const minutes = parseInt(parts[1]) || 0;
+                                return hours * 60 + minutes;
+                            }
+                        }
+
+                        const hoursMatch = duration.match(/(\d+)\s*год/i);
+                        const minsMatch = duration.match(/(\d+)\s*хв/i);
+
+                        const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+                        const minutes = minsMatch ? parseInt(minsMatch[1]) : 0;
+
+                        return hours * 60 + minutes;
+                    }
+
+                    // Отримуємо дані з localStorage та API
+                    async function getLocalData() {
+                        try {
+                            const workouts = JSON.parse(localStorage.getItem('userExercisePlan')) || [];
+                            const meals = JSON.parse(localStorage.getItem('userMealPlan')) || [];
+                            const workoutHistory = await getWorkoutHistory();
+
+                            // Перевірка, чи workoutHistory є масивом
+                            const validWorkoutHistory = Array.isArray(workoutHistory) ? workoutHistory : [];
+
+                            const allWorkouts = [...workouts, ...validWorkoutHistory];
+
+                            allWorkouts.forEach(w => {
+                                if (!w.date) w.date = new Date().toISOString();
+                                if (w.time) {
+                                    w.duration = durationToMinutes(w.time);
+                                } else if (w.duration) {
+                                    w.duration = durationToMinutes(w.duration);
+                                } else {
+                                    w.duration = 0;
+                                }
+                            });
+
+                            meals.forEach(m => {
+                                if (!m.date) m.date = new Date().toISOString();
+                            });
+
+                            return { workouts: allWorkouts, meals };
+                        } catch (e) {
+                            console.error("Помилка при читанні даних:", e);
+                            return { workouts: [], meals: [] };
+                        }
+                    }
+
+                    // Функція для групування даних по днях
+                    function groupByDay(data) {
+                        const groups = {};
+                        data.forEach(item => {
+                            try {
+                                const dateObj = new Date(item.date);
+                                if (isNaN(dateObj.getTime())) return;
+
+                                const date = dateObj.toLocaleDateString('uk-UA', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                });
+                                if (!groups[date]) groups[date] = [];
+                                groups[date].push(item);
+                            } catch (e) {
+                                console.error('Помилка обробки дати:', e);
+                            }
+                        });
+                        return groups;
+                    }
+
+                    // Функція для ініціалізації графіків
+                    async function initCharts(period = 'week') {
+                        try {
+                            const { workouts, meals } = await getLocalData();
+
+                            const now = new Date();
+                            const startDate = new Date(now);
+
+                            if (period === 'week') {
+                                startDate.setDate(startDate.getDate() - 7);
+                            } else if (period === 'month') {
+                                startDate.setMonth(startDate.getMonth() - 1);
+                            } else {
+                                const allDates = [
+                                    ...workouts.map(w => new Date(w.date)),
+                                    ...meals.map(m => new Date(m.date))
+                                ].filter(d => !isNaN(d.getTime()));
+
+                                if (allDates.length > 0) {
+                                    const earliestDate = new Date(Math.min(...allDates));
+                                    startDate.setTime(earliestDate.getTime());
+                                }
+                            }
+
+                            const filteredWorkouts = workouts.filter(w => {
+                                const workoutDate = new Date(w.date);
+                                return !isNaN(workoutDate.getTime()) && workoutDate >= startDate;
+                            });
+
+                            const filteredMeals = meals.filter(m => {
+                                const mealDate = new Date(m.date);
+                                return !isNaN(mealDate.getTime()) && mealDate >= startDate;
+                            });
+
+                            const workoutGroups = groupByDay(filteredWorkouts);
+                            const mealGroups = groupByDay(filteredMeals);
+
+                            const allDays = [...new Set([
+                                ...Object.keys(workoutGroups),
+                                ...Object.keys(mealGroups)
+                            ])].sort((a, b) => {
+                                const dateA = new Date(a.split('.').reverse().join('-'));
+                                const dateB = new Date(b.split('.').reverse().join('-'));
+                                return dateA - dateB;
+                            });
+
+                            // Підготовка даних для графіків
+                            const nutritionData = {
+                                proteins: allDays.map(day => {
+                                    const meals = mealGroups[day] || [];
+                                    return meals.reduce((sum, meal) => sum + (meal.protein || meal.macros?.protein || 0), 0);
+                                }),
+                                fats: allDays.map(day => {
+                                    const meals = mealGroups[day] || [];
+                                    return meals.reduce((sum, meal) => sum + (meal.fat || meal.macros?.fat || 0), 0);
+                                }),
+                                carbs: allDays.map(day => {
+                                    const meals = mealGroups[day] || [];
+                                    return meals.reduce((sum, meal) => sum + (meal.carbs || meal.macros?.carbs || 0), 0);
+                                }),
+                                calories: allDays.map(day => {
+                                    const meals = mealGroups[day] || [];
+                                    return meals.reduce((sum, meal) => sum + (meal.calories || meal.energy || meal.macros?.calories || 0), 0);
+                                })
+                            };
+
+                            const workoutData = {
+                                caloriesBurned: allDays.map(day => {
+                                    const workouts = workoutGroups[day] || [];
+                                    return workouts.reduce((sum, workout) => {
+                                        let energy = workout.calories || workout.energy || 0;
+                                        if (typeof energy === 'string') {
+                                            const match = energy.match(/\d+/);
+                                            energy = match ? parseInt(match[0]) : 0;
+                                        }
+                                        return sum + energy;
+                                    }, 0);
+                                }),
+                                durations: allDays.map(day => {
+                                    const workouts = workoutGroups[day] || [];
+                                    return workouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
+                                }),
+                                count: allDays.map(day => {
+                                    const workouts = workoutGroups[day] || [];
+                                    return workouts.length;
+                                })
+                            };
+
+                            const nutritionCanvas = document.getElementById('nutrition-chart');
+                            const caloriesCanvas = document.getElementById('calories-chart');
+                            const frequencyCanvas = document.getElementById('frequency-chart');
+
+                            if (!nutritionCanvas || !caloriesCanvas || !frequencyCanvas) {
+                                throw new Error('Не вдалося знайти елементи для графіків');
+                            }
+
+                            // Графік харчування (КБЖУ)
+                            if (window.nutritionChart) window.nutritionChart.destroy();
+                            window.nutritionChart = new Chart(nutritionCanvas.getContext('2d'), {
+                                type: 'bar',
+                                data: {
+                                    labels: allDays,
+                                    datasets: [
+                                        {
+                                            label: 'Білки (г)',
+                                            data: nutritionData.proteins,
+                                            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                                        },
+                                        {
+                                            label: 'Жири (г)',
+                                            data: nutritionData.fats,
+                                            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+                                        },
+                                        {
+                                            label: 'Вуглеводи (г)',
+                                            data: nutritionData.carbs,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Графік калорій (спожито/спалено)
+                            if (window.caloriesChart) window.caloriesChart.destroy();
+                            window.caloriesChart = new Chart(caloriesCanvas.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: allDays,
+                                    datasets: [
+                                        {
+                                            label: 'Спожито калорій',
+                                            data: nutritionData.calories,
+                                            borderColor: 'rgba(255, 99, 132, 1)',
+                                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Спалено калорій',
+                                            data: workoutData.caloriesBurned,
+                                            borderColor: 'rgba(54, 162, 235, 1)',
+                                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Баланс',
+                                            data: allDays.map((_, i) => nutritionData.calories[i] - workoutData.caloriesBurned[i]),
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            borderWidth: 2,
+                                            borderDash: [5, 5],
+                                            fill: false
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Графік частоти та тривалості тренувань
+                            if (window.frequencyChart) window.frequencyChart.destroy();
+                            window.frequencyChart = new Chart(frequencyCanvas.getContext('2d'), {
+                                type: 'bar',
+                                data: {
+                                    labels: allDays,
+                                    datasets: [
+                                        {
+                                            label: 'Кількість тренувань',
+                                            data: workoutData.count,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            borderWidth: 1,
+                                            yAxisID: 'y'
+                                        },
+                                        {
+                                            label: 'Тривалість (хв)',
+                                            data: workoutData.durations,
+                                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                            borderColor: 'rgba(153, 102, 255, 1)',
+                                            borderWidth: 2,
+                                            type: 'line',
+                                            tension: 0.3,
+                                            yAxisID: 'y1'
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    interaction: {
+                                        mode: 'index',
+                                        intersect: false
+                                    },
+                                    scales: {
+                                        y: {
+                                            type: 'linear',
+                                            display: true,
+                                            position: 'left',
+                                            title: {
+                                                display: true,
+                                                text: 'Кількість тренувань'
+                                            },
+                                            beginAtZero: true
+                                        },
+                                        y1: {
+                                            type: 'linear',
+                                            display: true,
+                                            position: 'right',
+                                            title: {
+                                                display: true,
+                                                text: 'Тривалість (хвилини)'
+                                            },
+                                            beginAtZero: true,
+                                            grid: {
+                                                drawOnChartArea: false
+                                            }
+                                        }
+                                    },
+                                    plugins: {
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function (context) {
+                                                    let label = context.dataset.label || '';
+                                                    if (label) label += ': ';
+                                                    if (context.dataset.yAxisID === 'y1') {
+                                                        return label + context.raw + ' хв';
+                                                    }
+                                                    return label + context.raw;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Оновлення даних
+                            updateSummaries(nutritionData, workoutData, allDays, workoutGroups);
+                        } catch (error) {
+                            console.error('Помилка при ініціалізації графіків:', error);
+                            showAlert('danger', 'Не вдалося завантажити дані для аналітики');
+                        }
+                    }
+
+                    // Функція для оновлення підсумків
+                    function updateSummaries(nutritionData, workoutData, allDays, workoutGroups) {
+                        const avg = arr => {
+                            const filtered = arr.filter(val => val > 0);
+                            return filtered.length > 0 ?
+                                filtered.reduce((a, b) => a + b, 0) / filtered.length : 0;
+                        };
+
+                        const sum = arr => arr.reduce((a, b) => a + b, 0);
+
+                        // Підсумки харчування
+                        const avgProtein = avg(nutritionData.proteins);
+                        const avgFat = avg(nutritionData.fats);
+                        const avgCarbs = avg(nutritionData.carbs);
+                        const avgCalories = avg(nutritionData.calories);
+                        const avgBurned = avg(workoutData.caloriesBurned);
+                        const balance = avgCalories - avgBurned;
+
+                        const nutritionSummary = document.getElementById('nutrition-summary');
+                        if (nutritionSummary) {
+                            nutritionSummary.innerHTML = `
+                        <div class="alert alert-info">
+                            <h6>Середньодобове споживання:</h6>
+                            <p>Білки: ${avgProtein.toFixed(1)}г</p>
+                            <p>Жири: ${avgFat.toFixed(1)}г</p>
+                            <p>Вуглеводи: ${avgCarbs.toFixed(1)}г</p>
+                            <p>Калорії: ${avgCalories.toFixed(0)} ккал</p>
+                        </div>`;
+                        }
+
+                        const caloriesSummary = document.getElementById('calories-summary');
+                        if (caloriesSummary) {
+                            caloriesSummary.innerHTML = `
+                        <div class="alert alert-info">
+                            <h6>Середньодобовий баланс:</h6>
+                            <p>Спожито: ${avgCalories.toFixed(0)} ккал</p>
+                            <p>Спалено: ${avgBurned.toFixed(0)} ккал</p>
+                            <p>Баланс: <span class="badge ${balance >= 0 ? 'bg-danger' : 'bg-success'}">
+                                ${balance >= 0 ? '+' : ''}${balance.toFixed(0)} ккал
+                            </span></p>
+                        </div>`;
+                        }
+
+                        // Підсумки тренувань
+                        const totalWorkouts = sum(workoutData.count);
+                        const workoutDays = workoutData.count.filter(count => count > 0).length;
+                        const totalDurationMinutes = sum(workoutData.durations);
+
+                        const formatDuration = (minutes) => {
+                            const hrs = Math.floor(minutes / 60);
+                            const mins = Math.round(minutes % 60);
+                            return `${hrs > 0 ? hrs + ' год ' : ''}${mins} хв`;
+                        };
+
+                        const frequencySummary = document.getElementById('frequency-summary');
+                        if (frequencySummary) {
+                            frequencySummary.innerHTML = `
+                        <div class="alert alert-info">
+                            <h6>Статистика тренувань:</h6>
+                            <p>Кількість вправ: ${totalWorkouts}</p>
+                            <p>Загальна тривалість тренування: ${formatDuration(totalDurationMinutes)}</p>
+                            <p>Спалено: ${avgBurned.toFixed(0)} ккал</p>
+                        </div>`;
+                        }
+                    }
+
+                    initCharts();
+
+                    // Обробник зміни періоду
+                    const periodSelect = document.getElementById('period-select');
+                    if (periodSelect) {
+                        periodSelect.addEventListener('change', function () {
+                            initCharts(this.value);
+                        });
+                    }
+                });
+            </script>
+            <%- include('partials/footer') %>
+</body>
+
+</html>

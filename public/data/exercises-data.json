@@ -1,0 +1,296 @@
+{
+  "gymExercises": {
+    "Силові тренування": {
+      "Ноги": [
+        {
+          "name": "Присідання зі штангою",
+          "image": "/images/exercise_1.jpg",
+          "video": "https://youtu.be/mkOPUCXzlB4",
+          "time": "10 хв",
+          "energy": "120 ккал",
+          "description": "Базове присідання зі штангою на плечах. Важлива правильна техніка виконання.",
+          "muscleGroup": "Квадрицепси, сідниці, спина",
+          "equipment": ["Штанга", "Стійки"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Випади з гантелями",
+          "image": "/images/exercise_2.jpg",
+          "video": "https://youtu.be/QOVaHwm-Q6U",
+          "time": "8 хв",
+          "energy": "100 ккал",
+          "description": "Випади вперед з гантелями в руках. Працюють всі м'язи ніг.",
+          "muscleGroup": "Квадрицепси, сідниці",
+          "equipment": ["Гантелі"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Жим ногами",
+          "image": "/images/exercise_3.jpg",
+          "video": "https://youtu.be/IZxyjW7MPJQ",
+          "time": "12 хв",
+          "energy": "150 ккал",
+          "description": "Вправа на тренажері для розвитку м'язів ніг.",
+          "muscleGroup": "Квадрицепси, сідниці",
+          "equipment": ["Тренажер"],
+          "category": "Спортзал"
+        }
+      ],
+      "Спина": [
+        {
+          "name": "Станова тяга",
+          "image": "/images/exercise_4.jpg",
+          "video": "https://youtu.be/r4MzxtBKyNE",
+          "time": "12 хв",
+          "energy": "150 ккал",
+          "description": "Підйом штанги з підлоги з правильною технікою.",
+          "muscleGroup": "Спина, ноги",
+          "equipment": ["Штанга"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Тяга верхнього блоку",
+          "image": "/images/exercise_5.jpg",
+          "video": "https://youtu.be/CAwf7n6Luuc",
+          "time": "10 хв",
+          "energy": "120 ккал",
+          "description": "Вправа для розвитку широчайших м'язів спини.",
+          "muscleGroup": "Спина, біцепс",
+          "equipment": ["Тренажер"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Тяга штанги в нахилі",
+          "image": "/images/exercise_6.jpg",
+          "video": "https://youtu.be/9efgcAjQe7E",
+          "time": "10 хв",
+          "energy": "130 ккал",
+          "description": "Вправа для товщини спини.",
+          "muscleGroup": "Спина, біцепс",
+          "equipment": ["Штанга"],
+          "category": "Спортзал"
+        }
+      ],
+      "Груди": [
+        {
+          "name": "Жим лежачи",
+          "image": "/images/exercise_7.jpg",
+          "video": "https://youtu.be/gRVjAtPip0Y",
+          "time": "10 хв",
+          "energy": "120 ккал",
+          "description": "Жим штанги лежачи на горизонтальній лавці.",
+          "muscleGroup": "Грудні м'язи, трицепс",
+          "equipment": ["Штанга", "Лавка"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Розведення гантелей",
+          "image": "/images/exercise_8.jpg",
+          "video": "https://youtu.be/eozdVDA78K0",
+          "time": "8 хв",
+          "energy": "100 ккал",
+          "description": "Вправа для розтягування грудних м'язів.",
+          "muscleGroup": "Грудні м'язи",
+          "equipment": ["Гантелі", "Лавка"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Жим в тренажері",
+          "image": "/images/exercise_9.jpg",
+          "video": "https://youtu.be/0G2_XV7slIg",
+          "time": "9 хв",
+          "energy": "110 ккал",
+          "description": "Безпечний варіант жиму для початківців.",
+          "muscleGroup": "Грудні м'язи",
+          "equipment": ["Тренажер"],
+          "category": "Спортзал"
+        }
+      ]
+    },
+    "Кардіо": {
+      "Бігова доріжка": [
+        {
+          "name": "Інтервальний біг",
+          "image": "/images/exercise_10.jpg",
+          "video": "https://youtu.be/gCm2kysFwOA",
+          "time": "20 хв",
+          "energy": "200 ккал",
+          "description": "Чергування швидкого та повільного бігу.",
+          "muscleGroup": "Ноги, серцево-судинна система",
+          "equipment": ["Бігова доріжка"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Сходинковий тренажер",
+          "image": "/images/exercise_11.jpg",
+          "video": "https://youtu.be/QBVxDEu4q8w",
+          "time": "15 хв",
+          "energy": "180 ккал",
+          "description": "Імітація підйому по сходах.",
+          "muscleGroup": "Ноги, сідниці",
+          "equipment": ["Сходинковий тренажер"],
+          "category": "Спортзал"
+        },
+        {
+          "name": "Велотренажер",
+          "image": "/images/exercise_12.jpg",
+          "video": "https://youtu.be/XMWoWE6GW-Y",
+          "time": "25 хв",
+          "energy": "220 ккал",
+          "description": "Кардіонавантаження з низьким впливом на суглоби.",
+          "muscleGroup": "Ноги",
+          "equipment": ["Велотренажер"],
+          "category": "Спортзал"
+        }
+      ]
+    }
+  },
+  "homeExercises": {
+    "Силові тренування": {
+      "Вправи без обладнання": [
+        {
+          "name": "Віджимання від підлоги",
+          "image": "/images/exercise_13.jpg",
+          "video": "https://youtu.be/IODxDxX7oi4",
+          "time": "10 хв",
+          "energy": "100 ккал",
+          "description": "Класичні віджимання з різною постановкою рук.",
+          "muscleGroup": "Груди, трицепс",
+          "equipment": ["Килимок"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Присідання з власною вагою",
+          "image": "/images/exercise_14.jpg",
+          "video": "https://youtu.be/aclHkVaku9U",
+          "time": "12 хв",
+          "energy": "120 ккал",
+          "description": "Присідання без додаткового навантаження.",
+          "muscleGroup": "Ноги, сідниці",
+          "equipment": [],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Планка",
+          "image": "/images/exercise_15.jpg",
+          "video": "https://youtu.be/pSHjTRCQxIw",
+          "time": "5 хв",
+          "energy": "50 ккал",
+          "description": "Вправа для м'язів корпуса.",
+          "muscleGroup": "Пресс, спина",
+          "equipment": ["Килимок"],
+          "category": "Домашні вправи"
+        }
+      ],
+      "З обладнанням": [
+        {
+          "name": "Віджимання на брусах",
+          "image": "/images/exercise_16.jpg",
+          "video": "https://youtu.be/2z8JmcrW-As",
+          "time": "8 хв",
+          "energy": "90 ккал",
+          "description": "Вправа для трицепсів та грудей.",
+          "muscleGroup": "Трицепс, грудні",
+          "equipment": ["Бруси"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Підтягування",
+          "image": "/images/exercise_17.jpg",
+          "video": "https://youtu.be/eGo4IYlbE5g",
+          "time": "10 хв",
+          "energy": "110 ккал",
+          "description": "Базова вправа для спини.",
+          "muscleGroup": "Спина, біцепс",
+          "equipment": ["Турнік"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Вправи з гантелями",
+          "image": "/images/exercise_18.jpg",
+          "video": "https://youtu.be/VL5Ab0T07e4",
+          "time": "15 хв",
+          "energy": "130 ккал",
+          "description": "Комплекс вправ з гантелями.",
+          "muscleGroup": "Все тіло",
+          "equipment": ["Гантелі"],
+          "category": "Домашні вправи"
+        }
+      ]
+    },
+    "Кардіо": {
+      "Інтенсивні вправи": [
+        {
+          "name": "Берпі",
+          "image": "/images/exercise_19.jpg",
+          "video": "https://youtu.be/qLBImHhCXSw",
+          "time": "10 хв",
+          "energy": "150 ккал",
+          "description": "Комплексна вправа: присідання, віджимання, стрибок.",
+          "muscleGroup": "Все тіло",
+          "equipment": ["Килимок"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Стрибки на скакалці",
+          "image": "/images/exercise_20.png",
+          "video": "https://youtu.be/1BZM2Vre5oc",
+          "time": "15 хв",
+          "energy": "200 ккал",
+          "description": "Базові стрибки на скакалці з постійним темпом.",
+          "muscleGroup": "Ноги, плечі",
+          "equipment": ["Скакалка"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Стрибки з розведенням",
+          "image": "/images/exercise_21.jpg",
+          "video": "https://youtu.be/iSSAk4XCsRA",
+          "time": "8 хв",
+          "energy": "120 ккал",
+          "description": "Ефективна кардіовправа.",
+          "muscleGroup": "Все тіло",
+          "equipment": [],
+          "category": "Домашні вправи"
+        }
+      ]
+    },
+    "Гнучкість": {
+      "Розтяжка": [
+        {
+          "name": "Розтяжка спини",
+          "image": "/images/exercise_22.jpg",
+          "video": "https://youtu.be/k0DaMHQGp4M",
+          "time": "15 хв",
+          "energy": "80 ккал",
+          "description": "Комплекс вправ для розтяжки м'язів спини.",
+          "muscleGroup": "Спина",
+          "equipment": ["Килимок"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Розтяжка ніг",
+          "image": "/images/exercise_23.jpg",
+          "video": "https://youtu.be/2nbk3yOcIYs",
+          "time": "12 хв",
+          "energy": "70 ккал",
+          "description": "Вправи для гнучкості ніг.",
+          "muscleGroup": "Ноги",
+          "equipment": ["Килимок"],
+          "category": "Домашні вправи"
+        },
+        {
+          "name": "Йога для початківців",
+          "image": "/images/exercise_24.jpg",
+          "video": "https://youtu.be/VaoV1PrYft4",
+          "time": "20 хв",
+          "energy": "90 ккал",
+          "description": "Базові асани для покращення гнучкості.",
+          "muscleGroup": "Все тіло",
+          "equipment": ["Килимок", "Йога-мат"],
+          "category": "Домашні вправи"
+        }
+      ]
+    }
+  }
+}

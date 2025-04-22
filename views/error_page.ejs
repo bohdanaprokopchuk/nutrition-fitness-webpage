@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%- include("./partials/head", { title: "Сторінку не знайдено" }) %>
+</head>
+
+<body>
+    <%- include("./partials/userbar") %>
+    <%- include("./partials/header", { active: 0 }) %>
+
+    <div class="container text-center my-5">
+        <h1 class="display-4 text-danger">404</h1>
+        <p class="lead">Сторінку не знайдено!</p>
+        <a href="/" class="btn btn-primary mt-3">Повернутися на головну</a>
+    </div>
+ 
+    <%- include("./partials/footer") %>
+</body>
+</html>

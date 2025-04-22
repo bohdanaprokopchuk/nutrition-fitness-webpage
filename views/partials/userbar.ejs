@@ -1,0 +1,54 @@
+<div class="wrap" style="background-color:#007bff;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center userbar py-2 px-3 flex-wrap text-white">
+
+            <% if (user) { %>
+
+                <!-- Виведення ваги -->
+                <div class="d-flex align-items-center mr-3">
+                    <span class="icon-weight mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20"
+                            style="fill: white;">
+                            <path
+                                d="M448 64h-26C438.4 92.3 448 125 448 160c0 105.9-86.1 192-192 192S64 265.9 64 160c0-35 9.6-67.7 26-96H64C28.7 64 0 92.7 0 128v320c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64zM256 320c88.4 0 160-71.6 160-160S344.4 0 256 0 96 71.6 96 160s71.6 160 160 160zm-.3-151.9l33.6-78.4c3.5-8.2 12.9-11.9 21-8.4 8.1 3.5 11.9 12.9 8.4 21l-33.7 78.6C291.7 188 296 197.5 296 208c0 22.1-17.9 40-40 40s-40-17.9-40-40c0-22 17.8-39.8 39.7-39.9z" />
+                        </svg>
+                    </span>
+                    <span class="mr-1">Вага:</span>
+                    <span title="Початкова вага">
+                        <%= user.start_weight %>
+                    </span>
+                    <% if(user.current_weight !==0){ %>
+                        <span>/ <%= user.current_weight %></span>
+                        <% } %>
+                </div>
+
+                <!-- Ім’я + Вихід -->
+                <div class="d-flex align-items-center">
+                    <a href="#" class="d-flex align-items-center text-white mr-3" style="text-decoration: none;">
+                        <span class="fa fa-user mr-2"></span>
+                        <%= user.name %>
+                    </a>
+                    <a href="/auth/logout" class="btn btn-outline-light btn-sm px-3 py-1" style="border-radius: 20px;">
+                        Вихід
+                    </a>
+                </div>
+
+                <% } else { %>
+
+                    <!-- Гість -->
+                    <div class="d-flex align-items-center">
+                        <p class="mb-0" style="font-size: 16px; display: flex; align-items: center;">
+                            <span class="fa-solid fa-weight-scale mr-2" style="margin-right: 10px;"></span>
+                            <span>Рухайся та харчуйся з розумом</span>
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <a href="/auth/login" class="btn btn-sm btn-light">Увійти</a>
+                    </div>
+
+                    <% } %>
+
+        </div>
+    </div>
+</div>

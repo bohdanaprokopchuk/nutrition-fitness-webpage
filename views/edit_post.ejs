@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <%- include("./partials/head", {title: "Редагувати пост" }) %>
+</head>
+
+<body>
+    <%- include("./partials/userbar") %>
+    <%- include("./partials/header", { active: 2}) %>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-8">
+                <h1 class="mb-4 text-center">Редагувати пост</h1>
+    
+                <form action="/edit-post/<%= post.id %>" method="POST" enctype="multipart/form-data"
+                    class="border p-4 rounded-3 shadow-sm bg-light">
+                    <input type="hidden" name="id" value="<%= post.id %>">
+    
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Назва:</label>
+                        <input type="text" name="title" id="title" class="form-control" required value="<%= post.title %>"
+                            placeholder="Введіть заголовок поста">
+                    </div>
+    
+                    <div class="mb-3">
+                        <label for="content" class="form-label fw-bold">Текст:</label>
+                        <textarea name="content" id="content" class="form-control">
+                                <%= post.content %>
+                            </textarea>
+                    </div>
+    
+                    <div class="mb-3">
+                        <label for="category" class="form-label fw-bold">Категорія:</label>
+                        <select name="category" id="category" class="form-select">
+                            <% categories.forEach(category=> { %>
+                                <option value="<%= category.id %>" <%=category.id==post.category_id ? 'selected' : '' %>
+                                    >
+                                    <%= category.title %>
+                                </option>
+                                <% }); %>
+                        </select>
+                    </div>
+    
+                    <div class="mb-4">
+                        <label for="new_category" class="form-label fw-bold">Або нова категорія:</label>
+                        <input type="text" name="new_category" id="new_category" class="form-control"
+                            placeholder="Введіть нову категорію">
+                    </div>
+    
+                    <div class="mb-3">
+                        <label for="post_image" class="form-label fw-bold">Зображення:</label>
+                        <% if (post.image_path) { %>
+                            <div class="mb-2">
+                                <img src="<%= post.image_path %>" class="img-thumbnail" style="max-height: 150px;">
+                                <div class="form-text">Поточне зображення</div>
+                            </div>
+                            <% } %>
+                                <input type="file" name="post_image" id="post_image" class="form-control" accept="image/*">
+                                <div class="form-text">Максимальний розмір: 5MB. Дозволені формати: JPG, PNG, GIF.</div>
+                    </div>
+    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-2"></i>Зберегти
+                        </button>
+                        <a href="/post/<%= post.id %>"" class=" btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Назад
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Підключення CKEditor -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#content'), {
+                language: 'uk'
+            })
+            .catch(error => {
+                console.error('Помилка при ініціалізації CKEditor:', error);
+            });
+    </script>
+
+    <%- include("./partials/footer") %>
+</body>
+</html>

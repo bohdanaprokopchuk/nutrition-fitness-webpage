@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <%- include("./partials/head", {title: "Харчування" }) %>
+  </head>
+
+<body class="plans">
+  <%- include("./partials/userbar") %>
+  <%- include("./partials/header", { active: 5}) %>
+
+  <section class="action-navbar">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12 d-flex my-1 justify-content-center">
+          <% if (user) { %>
+            <div class="text-center">
+              <button id="saveplan" class="btn-grad saveplan">
+                <i class="fa-solid fa-floppy-disk"></i> Зберегти
+              </button>
+            </div>
+            <% } else { %>
+              <div class="col-md-12 d-flex my-1 py-1 justify-content-center">
+                <a href="/auth/login" class="btn-grad mx-1 saveplant">
+                  <i class="fa-solid fa-floppy-disk"></i> Зберегти
+                </a>
+              </div>
+              <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <div class="container programs-creator my-5">
+    <h1 class="text-center mb-4">Оберіть харчування згідно вашої мети</h1>
+    <h5 class="text-center mb-5">
+      Вони будуть додані до списку ваших планів харчування, та завжди доступні на
+      <a href="/my-programs">сторінці</a>.
+    </h5>
+  
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Всі плани харчування</h3>
+          </div>
+          <div class="card-body p-0">
+            <div id="meals-list" class="accordion">
+              <div class="text-center p-4">
+                <div class="spinner-border text-primary spinner-border-sm" role="status">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h3 class="mb-0">Мій план</h3>
+          </div>
+          <div class="card-body p-0">
+            <div id="user-plan-list" class="accordion p-3">
+              <% if (user && user.dietPlan && user.dietPlan.length> 0) { %>
+                <% user.dietPlan.forEach(meal=> { %>
+                  <div class="meal-entry mb-3 p-3 rounded shadow-sm bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <strong>
+                        <%= meal.name %>
+                      </strong>
+                      <span class="badge bg-primary rounded-pill fs-6">
+                        <%= meal.macros?.calories || 0 %> ккал
+                      </span>
+                    </div>
+                  </div>
+                  <% }); %>
+                    <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      // Lazy loading для зображень
+      const lazyLoadImages = () => {
+        const images = document.querySelectorAll('img[data-src]');
+        const imageObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              img.classList.add('loaded');
+              imageObserver.unobserve(img);
+            }
+          });
+        }, { threshold: 0.1 });
+
+        images.forEach(img => imageObserver.observe(img));
+      };
+
+      // Завантаження даних
+      async function loadDietData() {
+        try {
+          const response = await fetch('/data/diet-data.json');
+          if (!response.ok) throw new Error('Не вдалося завантажити дані');
+          return await response.json();
+        } catch (error) {
+          console.error('Помилка завантаження даних:', error);
+          document.getElementById('meals-list').innerHTML = `
+              <div class="alert alert-danger m-3 p-2 small">
+                Не вдалося завантажити дані харчування. Спробуйте оновити сторінку.
+              </div>
+            `;
+          return null;
+        }
+      }
+
+      // Оновлення стану пустого плану
+      function updateEmptyState() {
+        const userPlanContainer = document.getElementById('user-plan-list');
+        if (userPlan.length === 0 && userPlanContainer.children.length === 0) {
+          userPlanContainer.innerHTML = `
+            `;
+        }
+      }
+
+      // Функція для створення елемента страви
+      const createMealElement = (meal, isUserPlan = false) => {
+        const element = document.createElement('div');
+        element.className = 'accordion-item meal-entry';
+        element.dataset.name = meal.name;
+
+        const isSelected = userPlan.some(item => item.name === meal.name);
+        if (isSelected) {
+          element.classList.add('selected');
+        }
+
+        const videoId = meal.video ? extractYouTubeId(meal.video) : null;
+        const uniqueId = `${meal.name.replace(/\s+/g, '-')}-${Math.random().toString(36).substr(2, 9)}`;
+
+        element.innerHTML = `
+            <div class="accordion-header d-flex justify-content-between align-items-center p-3" 
+                 data-bs-toggle="collapse" 
+                 data-bs-target="#collapse-${uniqueId}">
+              <div class="d-flex align-items-center">
+                <span class="accordion-title fw-bold me-3">${meal.name}</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <span class="badge calories-badge me-2">${meal.macros?.calories || 0} ккал</span>
+                <button class="btn btn-sm ${isUserPlan ? 'btn-outline-danger' : 'btn-outline-primary'} ms-2">
+                  ${isUserPlan ? '−' : '+'}
+                </button>
+                <span class="accordion-icon ms-2">▼</span>
+              </div>
+            </div>
+            <div id="collapse-${uniqueId}" 
+                 class="accordion-collapse collapse">
+              <div class="accordion-body">
+                <div class="meal-details">
+                  <p class="description-text mb-3">${meal.description}</p>
+                  <div class="macros mb-3">
+                    <div><strong>Білки:</strong> ${meal.macros?.protein || 0}г</div>
+                    <div><strong>Вуглеводи:</strong> ${meal.macros?.carbs || 0}г</div>
+                    <div><strong>Жири:</strong> ${meal.macros?.fat || 0}г</div>
+                  </div>
+                  <div class="row">
+                    ${meal.image ? `
+                    <div class="col-md-6 mb-3">
+                      <img data-src="${meal.image}" alt="${meal.name}" class="meal-img lazy-load">
+                    </div>` : ''}
+                  </div>
+                  ${meal.ingredients ? `
+                  <div class="ingredients mb-3">
+                    <strong>Інгредієнти:</strong>
+                    <ul>
+                      ${meal.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                    </ul>
+                  </div>` : ''}
+                  <div class="meal-info">
+                    ${meal.preparation_time ? `<span class="badge time-badge me-2">${meal.preparation_time} хв</span>` : ''}
+                    ${meal.meal_type ? `<span class="badge type-badge">${meal.meal_type}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+        const btn = element.querySelector('button');
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          const mealIndex = userPlan.findIndex(item => item.name === meal.name);
+
+          if (mealIndex !== -1) {
+            // Видаляємо страву з плану
+            userPlan.splice(mealIndex, 1);
+            const planItem = document.querySelector(`#user-plan-list [data-name="${meal.name}"]`);
+            if (planItem) planItem.remove();
+          } else {
+            // Додаємо страву до плану
+            userPlan.push(meal);
+            const newMealElement = createMealElement(meal, true);
+            document.getElementById('user-plan-list').appendChild(newMealElement);
+            lazyLoadImages();
+          }
+
+          // Оновлюємо стан кнопки у всіх відповідних елементах
+          document.querySelectorAll(`[data-name="${meal.name}"]`).forEach(el => {
+            const btn = el.querySelector('button');
+            if (btn) {
+              btn.className = `btn btn-sm ${mealIndex === -1 ? 'btn-outline-danger' : 'btn-outline-primary'}`;
+              btn.innerHTML = mealIndex === -1 ? '−' : '+';
+            }
+            el.classList.toggle('selected', mealIndex === -1);
+          });
+
+          localStorage.setItem('userMealPlan', JSON.stringify(userPlan));
+          updateEmptyState();
+        });
+
+        return element;
+      };
+
+      // Функція для відображення страв
+      const renderMeals = (mealsData) => {
+        const container = document.getElementById('meals-list');
+        container.innerHTML = '';
+
+        if (!mealsData || !mealsData.nutrition_plans) {
+          container.innerHTML = '<div class="alert alert-warning m-2 p-2 small">Немає даних для відображення</div>';
+          return;
+        }
+
+        for (const category in mealsData.nutrition_plans) {
+          const groupBlock = document.createElement('div');
+          groupBlock.className = 'meal-group border-bottom';
+
+          const groupTitle = document.createElement('div');
+          groupTitle.className = 'p-3 bg-light';
+          groupTitle.innerHTML = `<h4 class="mb-0">${category}</h4>`;
+          groupBlock.appendChild(groupTitle);
+
+          for (const subcategory in mealsData.nutrition_plans[category]) {
+            const categoryWrapper = document.createElement('div');
+            categoryWrapper.className = 'meal-category';
+
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'd-flex justify-content-between align-items-center p-3 bg-light';
+
+            const categoryTitle = document.createElement('h5');
+            categoryTitle.className = 'mb-0';
+            categoryTitle.textContent = subcategory;
+
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'btn btn-sm btn-outline-primary';
+            toggleButton.textContent = '+ Всі';
+            toggleButton.dataset.category = category;
+            toggleButton.dataset.subcategory = subcategory;
+
+            toggleButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const meals = mealsData.nutrition_plans[category][subcategory];
+              const allInPlan = meals.every(meal =>
+                userPlan.some(item => item.name === meal.name)
+              );
+
+              if (allInPlan) {
+                meals.forEach(meal => {
+                  userPlan = userPlan.filter(item => item.name !== meal.name);
+                  const mealElement = document.querySelector(`#user-plan-list [data-name="${meal.name}"]`);
+                  if (mealElement) mealElement.remove();
+                });
+                toggleButton.textContent = '+ Всі';
+              } else {
+                meals.forEach(meal => {
+                  if (!userPlan.some(item => item.name === meal.name)) {
+                    userPlan.push(meal);
+                    const newElement = createMealElement(meal, true);
+                    document.getElementById('user-plan-list').appendChild(newElement);
+                  }
+                });
+                toggleButton.textContent = '- Всі';
+              }
+
+              document.querySelectorAll(`[data-name]`).forEach(el => {
+                const name = el.dataset.name;
+                const shouldBeSelected = meals.some(meal =>
+                  meal.name === name && userPlan.some(item =>
+                    item.name === name
+                  )
+                );
+                el.classList.toggle('selected', shouldBeSelected);
+              });
+
+              localStorage.setItem('userMealPlan', JSON.stringify(userPlan));
+              updateEmptyState();
+            });
+
+            categoryHeader.appendChild(categoryTitle);
+            categoryHeader.appendChild(toggleButton);
+            categoryWrapper.appendChild(categoryHeader);
+
+            mealsData.nutrition_plans[category][subcategory].forEach(meal => {
+              categoryWrapper.appendChild(createMealElement(meal));
+            });
+
+            groupBlock.appendChild(categoryWrapper);
+          }
+
+          container.appendChild(groupBlock);
+        }
+      };
+
+      // Збереження плану
+      document.getElementById('saveplan')?.addEventListener('click', async function () {
+        if (userPlan.length === 0) {
+          showAlert('warning', 'Ваш план харчування порожній');
+          return;
+        }
+
+        try {
+          console.log("Спроба зберегти план:", userPlan);
+
+          const response = await fetch('/api/save-diet-plan', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            },
+            body: JSON.stringify({
+              planData: userPlan,
+              debugInfo: {
+                savedAt: new Date().toISOString(),
+                planLength: userPlan.length
+              }
+            })
+          });
+
+          console.log("Відповідь сервера:", response);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+
+          const result = await response.json();
+          console.log("Результат збереження:", result);
+
+          if (result.success) {
+            showAlert('success', 'План збережено!');
+          } else {
+            showAlert('danger', result.message || 'Помилка збереження');
+          }
+        } catch (error) {
+          console.error('Помилка збереження:', error);
+          showAlert('danger', `Помилка: ${error.message}`);
+        }
+      });
+
+      // Ініціалізація
+      let userPlan = JSON.parse(localStorage.getItem('userMealPlan')) || [];
+      const dietData = await loadDietData();
+
+      if (dietData) {
+        // Рендер страв для плану харчування
+        renderMeals(dietData, 'meals-list');
+
+        // Відобразити збережений план
+        userPlan.forEach(meal => {
+          const planContainer = document.getElementById('user-plan-list');
+          if (planContainer.querySelector(`[data-name="${meal.name}"]`) === null) {
+            planContainer.appendChild(createMealElement(meal, true));
+          }
+        });
+
+        // Оновити стан пустого контейнера
+        updateEmptyState('user-plan-list');
+
+        // Ініціалізація акордіону
+        document.querySelectorAll('.accordion-header').forEach(item => {
+          item.addEventListener('click', function () {
+            const icon = this.querySelector('.accordion-icon');
+            if (icon) {
+              const isCollapsed = this.getAttribute('aria-expanded') === 'true';
+              icon.textContent = isCollapsed ? '▼' : '▲';
+            }
+          });
+        });
+
+        lazyLoadImages();
+      }
+    });
+  </script>
+  
+  <%- include("./partials/footer") %>
+</body>
+</html>
