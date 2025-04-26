@@ -4,6 +4,8 @@
 <head>
     <%- include("./partials/head", {title: "Аналітика тренувань та харчування" }) %>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
 </head>
 
 <body class="analyze">
@@ -13,11 +15,11 @@
             <div class="container my-5">
                 <h1 class="mb-4">Щоденна аналітика ваших тренувань та харчування</h1>
 
-                <!-- Вибор періоду -->
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <select id="period-select" class="form-select">
-                            <option value="week">Останній тиждень</option>
+                            <option value="day">Сьогодні</option>
+                            <option value="week" selected>Останній тиждень</option>
                             <option value="month">Останній місяць</option>
                             <option value="all">Весь період</option>
                         </select>
@@ -49,7 +51,6 @@
                     </div>
                 </div>
 
-                <!-- Графік частоти тренувань -->
                 <div class="row mb-4">
                     <div class="col-md-12">
                         <div class="card">
@@ -157,11 +158,7 @@
                                 const dateObj = new Date(item.date);
                                 if (isNaN(dateObj.getTime())) return;
 
-                                const date = dateObj.toLocaleDateString('uk-UA', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric'
-                                });
+                                const date = dateObj.toISOString().split('T')[0]; // Формат YYYY-MM-DD
                                 if (!groups[date]) groups[date] = [];
                                 groups[date].push(item);
                             } catch (e) {
@@ -171,50 +168,112 @@
                         return groups;
                     }
 
+                    // Функція для отримання діапазону дат за періодом
+                    function getDateRange(period) {
+                        const now = luxon.DateTime.now();
+                        let startDate;
+
+                        switch (period) {
+                            case 'day':
+                                startDate = now.startOf('day');
+                                return {
+                                    start: startDate,
+                                    end: now.endOf('day'),
+                                    format: 'dd.MM'
+                                };
+                            case 'week':
+                                startDate = now.minus({ days: 6 }).startOf('day');
+                                return {
+                                    start: startDate,
+                                    end: now.endOf('day'),
+                                    format: 'dd.MM'
+                                };
+                            case 'month':
+                                startDate = now.minus({ months: 1 }).startOf('day');
+                                return {
+                                    start: startDate,
+                                    end: now.endOf('day'),
+                                    format: 'dd.MM'
+                                };
+                            case 'all':
+                            default:
+                                return {
+                                    start: null,
+                                    end: now.endOf('day'),
+                                    format: 'dd.MM.yyyy'
+                                };
+                        }
+                    }
+
+                    // Функція для створення масиву всіх днів у періоді
+                    function getAllDaysInRange(range) {
+                        const days = [];
+                        let current = range.start;
+
+                        if (!current) return days;
+
+                        while (current <= range.end) {
+                            days.push(current.toISODate());
+                            current = current.plus({ days: 1 });
+                        }
+
+                        return days;
+                    }
+
                     // Функція для ініціалізації графіків
                     async function initCharts(period = 'week') {
                         try {
                             const { workouts, meals } = await getLocalData();
+                            const dateRange = getDateRange(period);
 
-                            const now = new Date();
-                            const startDate = new Date(now);
-
-                            if (period === 'week') {
-                                startDate.setDate(startDate.getDate() - 7);
-                            } else if (period === 'month') {
-                                startDate.setMonth(startDate.getMonth() - 1);
-                            } else {
-                                const allDates = [
-                                    ...workouts.map(w => new Date(w.date)),
-                                    ...meals.map(m => new Date(m.date))
-                                ].filter(d => !isNaN(d.getTime()));
-
-                                if (allDates.length > 0) {
-                                    const earliestDate = new Date(Math.min(...allDates));
-                                    startDate.setTime(earliestDate.getTime());
-                                }
-                            }
-
+                            // Фільтрація даних за період
                             const filteredWorkouts = workouts.filter(w => {
-                                const workoutDate = new Date(w.date);
-                                return !isNaN(workoutDate.getTime()) && workoutDate >= startDate;
+                                try {
+                                    const workoutDate = luxon.DateTime.fromISO(new Date(w.date).toISOString());
+                                    if (!workoutDate.isValid) return false;
+                                    return dateRange.start ? workoutDate >= dateRange.start : true;
+                                } catch (e) {
+                                    console.error('Помилка фільтрації тренувань:', e);
+                                    return false;
+                                }
                             });
 
                             const filteredMeals = meals.filter(m => {
-                                const mealDate = new Date(m.date);
-                                return !isNaN(mealDate.getTime()) && mealDate >= startDate;
+                                try {
+                                    const mealDate = luxon.DateTime.fromISO(new Date(m.date).toISOString());
+                                    if (!mealDate.isValid) return false;
+                                    return dateRange.start ? mealDate >= dateRange.start : true;
+                                } catch (e) {
+                                    console.error('Помилка фільтрації харчування:', e);
+                                    return false;
+                                }
                             });
 
                             const workoutGroups = groupByDay(filteredWorkouts);
                             const mealGroups = groupByDay(filteredMeals);
 
-                            const allDays = [...new Set([
-                                ...Object.keys(workoutGroups),
-                                ...Object.keys(mealGroups)
-                            ])].sort((a, b) => {
-                                const dateA = new Date(a.split('.').reverse().join('-'));
-                                const dateB = new Date(b.split('.').reverse().join('-'));
-                                return dateA - dateB;
+                            // Отримуємо всі дні в періоді
+                            let allDays;
+                            if (period === 'all') {
+                                // Для всього періоду беремо тільки дні з даними
+                                allDays = [...new Set([
+                                    ...Object.keys(workoutGroups),
+                                    ...Object.keys(mealGroups)
+                                ])].sort();
+                            } else {
+                                // Для інших періодів - всі дні в діапазоні
+                                allDays = getAllDaysInRange(dateRange);
+                            }
+
+                            // Форматуємо дати для відображення у форматі "день.місяць"
+                            const displayDates = allDays.map(date => {
+                                const dt = luxon.DateTime.fromISO(date);
+                                if (!dt.isValid) return date;
+
+                                if (period === 'all') {
+                                    return dt.toFormat('dd.MM.yyyy');
+                                }
+                                return dt.toFormat('dd.MM');
                             });
 
                             // Підготовка даних для графіків
@@ -272,7 +331,7 @@
                             window.nutritionChart = new Chart(nutritionCanvas.getContext('2d'), {
                                 type: 'bar',
                                 data: {
-                                    labels: allDays,
+                                    labels: displayDates,
                                     datasets: [
                                         {
                                             label: 'Білки (г)',
@@ -297,6 +356,15 @@
                                         y: {
                                             beginAtZero: true
                                         }
+                                    },
+                                    plugins: {
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function (context) {
+                                                    return `${context.dataset.label}: ${context.raw.toFixed(1)}г`;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             });
@@ -306,21 +374,23 @@
                             window.caloriesChart = new Chart(caloriesCanvas.getContext('2d'), {
                                 type: 'line',
                                 data: {
-                                    labels: allDays,
+                                    labels: displayDates,
                                     datasets: [
                                         {
                                             label: 'Спожито калорій',
                                             data: nutritionData.calories,
                                             borderColor: 'rgba(255, 99, 132, 1)',
                                             backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                                            fill: true
+                                            fill: true,
+                                            tension: 0.3
                                         },
                                         {
                                             label: 'Спалено калорій',
                                             data: workoutData.caloriesBurned,
                                             borderColor: 'rgba(54, 162, 235, 1)',
                                             backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                                            fill: true
+                                            fill: true,
+                                            tension: 0.3
                                         },
                                         {
                                             label: 'Баланс',
@@ -328,7 +398,8 @@
                                             borderColor: 'rgba(75, 192, 192, 1)',
                                             borderWidth: 2,
                                             borderDash: [5, 5],
-                                            fill: false
+                                            fill: false,
+                                            tension: 0.1
                                         }
                                     ]
                                 },
@@ -337,6 +408,15 @@
                                     scales: {
                                         y: {
                                             beginAtZero: true
+                                        }
+                                    },
+                                    plugins: {
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function (context) {
+                                                    return `${context.dataset.label}: ${context.raw.toFixed(0)} ккал`;
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -347,7 +427,7 @@
                             window.frequencyChart = new Chart(frequencyCanvas.getContext('2d'), {
                                 type: 'bar',
                                 data: {
-                                    labels: allDays,
+                                    labels: displayDates,
                                     datasets: [
                                         {
                                             label: 'Кількість тренувань',
@@ -418,7 +498,7 @@
                             });
 
                             // Оновлення даних
-                            updateSummaries(nutritionData, workoutData, allDays, workoutGroups);
+                            updateSummaries(nutritionData, workoutData, allDays, workoutGroups, period);
                         } catch (error) {
                             console.error('Помилка при ініціалізації графіків:', error);
                             showAlert('danger', 'Не вдалося завантажити дані для аналітики');
@@ -426,7 +506,7 @@
                     }
 
                     // Функція для оновлення підсумків
-                    function updateSummaries(nutritionData, workoutData, allDays, workoutGroups) {
+                    function updateSummaries(nutritionData, workoutData, allDays, workoutGroups, period) {
                         const avg = arr => {
                             const filtered = arr.filter(val => val > 0);
                             return filtered.length > 0 ?
@@ -447,7 +527,7 @@
                         if (nutritionSummary) {
                             nutritionSummary.innerHTML = `
                         <div class="alert alert-info">
-                            <h6>Середньодобове споживання:</h6>
+                            <h6>${period === 'day' ? 'Сьогоднішнє' : 'Середньодобове'} споживання:</h6>
                             <p>Білки: ${avgProtein.toFixed(1)}г</p>
                             <p>Жири: ${avgFat.toFixed(1)}г</p>
                             <p>Вуглеводи: ${avgCarbs.toFixed(1)}г</p>
@@ -459,7 +539,7 @@
                         if (caloriesSummary) {
                             caloriesSummary.innerHTML = `
                         <div class="alert alert-info">
-                            <h6>Середньодобовий баланс:</h6>
+                            <h6>${period === 'day' ? 'Сьогоднішній' : 'Середньодобовий'} баланс:</h6>
                             <p>Спожито: ${avgCalories.toFixed(0)} ккал</p>
                             <p>Спалено: ${avgBurned.toFixed(0)} ккал</p>
                             <p>Баланс: <span class="badge ${balance >= 0 ? 'bg-danger' : 'bg-success'}">
@@ -484,14 +564,15 @@
                             frequencySummary.innerHTML = `
                         <div class="alert alert-info">
                             <h6>Статистика тренувань:</h6>
-                            <p>Кількість вправ: ${totalWorkouts}</p>
-                            <p>Загальна тривалість тренування: ${formatDuration(totalDurationMinutes)}</p>
-                            <p>Спалено: ${avgBurned.toFixed(0)} ккал</p>
+                            <p>Кількість тренувань: ${totalWorkouts}</p>
+                            <p>Загальна тривалість: ${formatDuration(totalDurationMinutes)}</p>
+                            <p>Спалено калорій: ${sum(workoutData.caloriesBurned).toFixed(0)} ккал</p>
+                            ${period !== 'day' ? `<p>Днів з тренуваннями: ${workoutDays} з ${allDays.length}</p>` : ''}
                         </div>`;
                         }
                     }
 
-                    initCharts();
+                    initCharts('week');
 
                     // Обробник зміни періоду
                     const periodSelect = document.getElementById('period-select');

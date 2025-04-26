@@ -1,39 +1,37 @@
 const workoutModel = require('../models/workoutModel');
 
-exports.getWorkoutAnalytics = (req, res) => {
+exports.getWorkoutAnalytics = async (req, res) => {
+  try {
     if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Необхідно авторизуватися' });
+      return res.status(401).json({ success: false, message: 'Необхідно авторизуватися' });
     }
 
-    workoutModel.getUserWorkoutAnalytics(req.user.id, (err, analytics) => {
-        if (err) {
-            console.error('Помилка при отриманні аналітики:', err);
-            return res.status(500).json({ success: false, message: 'Помилка сервера' });
-        }
-        
-        res.json({ 
-            success: true,
-            analytics: {
-                threeMonths: prepareChartData(analytics.threeMonths),
-                sixMonths: prepareChartData(analytics.sixMonths),
-                oneYear: prepareChartData(analytics.oneYear)
-            }
-        });
+    const analytics = await workoutModel.getUserWorkoutAnalytics(req.user.id);
+    
+    res.json({
+      success: true,
+      analytics: {
+        threeMonths: prepareChartData(analytics.threeMonths),
+        sixMonths: prepareChartData(analytics.sixMonths),
+        oneYear: prepareChartData(analytics.oneYear)
+      }
     });
+  } catch (err) {
+    console.error('Помилка при отриманні аналітики:', err);
+    res.status(500).json({ success: false, message: 'Помилка сервера' });
+  }
 };
 
-// Підготовка даних для графіка
 function prepareChartData(data) {
-    return {
-        labels: data.map(item => formatDate(item.date)),
-        weights: data.map(item => item.avgWeight),
-        workoutCounts: data.map(item => item.workoutCount),
-        durations: data.map(item => item.totalHours)
-    };
+  return {
+    labels: data.map(item => formatDate(item.date)),
+    weights: data.map(item => item.avgWeight),
+    workoutCounts: data.map(item => item.workoutCount),
+    durations: data.map(item => item.totalHours)
+  };
 }
 
-// Форматування даних
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+  const date = new Date(dateString);
+  return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 }

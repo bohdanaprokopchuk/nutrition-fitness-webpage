@@ -65,8 +65,10 @@ const initializeDatabase = async () => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL,
                 message TEXT NOT NULL,
-                submitted_at DATETIME NOT NULL DEFAULT (datetime('now'))
+                submitted_at DATETIME NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (email) REFERENCES users(email)
             )
+
         `);
 
         await runQuery(`
