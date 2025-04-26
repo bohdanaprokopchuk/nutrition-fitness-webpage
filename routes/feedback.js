@@ -15,7 +15,6 @@ router.post("/", async (req, res) => {
     await addFeedback(email, message);
     res.status(200).json({ success: "Повідомлення успішно надіслано" });
   } catch (err) {
-    console.error("Помилка надсилання повідомлення:", err.message);
     res.status(500).json({ error: "Повідомлення не вдалося надіслати" });
   }
 });
@@ -26,7 +25,6 @@ router.get("/", async (req, res) => {
     const feedbacks = await getAllFeedbacks();
     res.status(200).json({ feedbacks });
   } catch (err) {
-    console.error("Помилка отримання повідомлення:", err.message);
     res.status(500).json({ error: "Не вдалося отримати повідомлення" });
   }
 });

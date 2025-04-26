@@ -1,9 +1,11 @@
+// Імпортуємо необхідні модулі
 const express = require("express");
 const path = require("path");
 require("dotenv").config();
 const session = require("express-session");
 const passport = require("passport");
 
+// Імпортуємо контролери та маршрути
 const postController = require("./controllers/postController");
 const authRoute = require("./routes/authRoute");
 const { isAuthenticated, isAdmin } = require('./middleware/authMiddleware');
@@ -16,14 +18,16 @@ const feedbackRoute = require("./routes/feedback");
 
 const app = express();
 
+// Налаштування парсингу запитів
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-//Налаштування Express Middleware
+// Налаштування шаблонізатора EJS
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
 
+// Статичні файли (CSS, JS, зображення)
+app.use(express.static(path.join(__dirname, "public")));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 //Налаштування сесії
