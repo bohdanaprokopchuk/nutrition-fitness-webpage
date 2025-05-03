@@ -104,7 +104,6 @@
                     map.setZoom(14);
                     searchByText(query, location, minRating);
                 } else {
-                    // Якщо не вдалося геокодувати — шукаємо як назву спортзалу
                     searchByText(query, map.getCenter(), minRating);
                 }
             });

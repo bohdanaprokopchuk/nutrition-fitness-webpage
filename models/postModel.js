@@ -2,39 +2,39 @@ const db = require("../database");
 
 //Отримати всі пости
 exports.getAllPosts = (callback) => {
- db.all(`SELECT posts.id, posts.title, posts.content, posts.image_path, posts.date_created, post_category.title AS category
- FROM posts
- JOIN post_category ON posts.category_id = post_category.id`,
- [], callback);
+    db.all(`SELECT posts.id, posts.title, posts.content, posts.image_path, posts.date_created, post_category.title AS category
+        FROM posts
+        JOIN post_category ON posts.category_id = post_category.id`,
+        [], callback);
 };
 
 //Отримати пост за id
 exports.getPostById = (id, callback) => {
- db.get(`SELECT posts.*, post_category.title AS category
- FROM posts
- JOIN post_category ON posts.category_id = post_category.id
- WHERE posts.id = ?`,
- [id], callback);
+    db.get(`SELECT posts.*, post_category.title AS category
+        FROM posts
+        JOIN post_category ON posts.category_id = post_category.id
+        WHERE posts.id = ?`,
+        [id], callback);
 };
 
 //Отримати всі категорії
 exports.getAllCategories = (callback) => {
- db.all("SELECT * FROM post_category", [], callback);
+    db.all("SELECT * FROM post_category", [], callback);
 };
 
 //Додати новий пост
 exports.addPost = (title, categoryId, content, image_path, callback) => {
- const date = new Date().toISOString().split("T")[0];
- db.run(`INSERT INTO posts (title, category_id, content, image_path, date_created) VALUES (?, ?, ?, ?, ?)`,
- [title, categoryId, content, image_path, date], callback);
+    const date = new Date().toISOString().split("T")[0];
+    db.run(`INSERT INTO posts (title, category_id, content, image_path, date_created) VALUES (?, ?, ?, ?, ?)`,
+        [title, categoryId, content, image_path, date], callback);
 };
 
 //Додати нову категорію
 exports.addCategory = (categoryTitle, callback) => {
- db.run(`INSERT INTO post_category (title) VALUES(?)`, [categoryTitle], function (err) {
- if (err) return callback (err);
- callback(null, this.lastID);
- });
+    db.run(`INSERT INTO post_category (title) VALUES(?)`, [categoryTitle], function (err) {
+        if (err) return callback(err);
+        callback(null, this.lastID);
+    });
 };
 
 //Додати новий пост з картинкою

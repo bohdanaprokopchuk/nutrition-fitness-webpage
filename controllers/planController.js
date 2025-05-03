@@ -41,7 +41,7 @@ exports.getUserPlans = (req, res) => {
         return res.status(401).json({ success: false, message: 'Не авторизований' });
     }
 
-    planModel.getPlans(
+    planModel.getCurrentPlans(
         req.user.id,
         (err, plans) => {
             if (err) {

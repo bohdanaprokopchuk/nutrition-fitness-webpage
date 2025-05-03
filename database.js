@@ -78,8 +78,7 @@ const initializeDatabase = async () => {
                 plan_type TEXT NOT NULL,
                 plan_data TEXT NOT NULL,
                 saved_at DATETIME NOT NULL DEFAULT (datetime('now')),
-                FOREIGN KEY (user_id) REFERENCES users(id),
-                UNIQUE(user_id, plan_type)
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         `);
 

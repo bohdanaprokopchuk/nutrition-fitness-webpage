@@ -376,7 +376,6 @@
                   if (!userPlan.some(item =>
                     item.name === ex.name && item.category === ex.category
                   )) {
-                    // Додаємо повний об'єкт вправи
                     userPlan.push(JSON.parse(JSON.stringify(ex)));
                     const newElement = createExerciseElement(ex, true, targetContainer);
                     planContainer.appendChild(newElement);

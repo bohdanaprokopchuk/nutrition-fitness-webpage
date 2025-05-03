@@ -1,16 +1,30 @@
-const { addFeedback, getAllFeedbacks } = require('../models/feedbackModel');
+const Feedback = require('../models/feedbackModel');
 
-const submitFeedback = async (email, message) => {
-  if (!email || !message) {
-    throw new Error("Email and message are required");
-  }
+// Надіслати відгук
+exports.submitFeedback = (req, res) => {
+    const { email, message } = req.body;
 
-  await addFeedback(email, message);
+    if (!email || !message) {
+        return res.status(400).send("Email and message are required");
+    }
+
+    Feedback.addFeedback(email, message, (err) => {
+        if (err) {
+            return res.status(500).send("Failed to submit feedback");
+        }
+        res.status(201).send("Feedback submitted successfully");
+    });
 };
 
-const getFeedbacks = async () => {
-  return await getAllFeedbacks();
+// Отримати всі відгуки
+exports.getFeedbacks = (req, res) => {
+    Feedback.getAllFeedbacks((err, feedbacks) => {
+        if (err) {
+            return res.status(500).send("Failed to retrieve feedbacks");
+        }
+        res.render("feedbacks", {
+            feedbacks,
+            user: req.user || null
+        });
+    });
 };
-
-module.exports = { submitFeedback, getFeedbacks };
-

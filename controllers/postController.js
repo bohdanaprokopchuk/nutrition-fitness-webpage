@@ -41,7 +41,6 @@ exports.createPost = [
     (req, res) => {
         const { title, content, category, new_category } = req.body;
         
-        // Шлях до зображень
         const imagePath = req.file ? '/uploads/posts/' + req.file.filename : null;
 
         // Виводимо інформацію про файл в консоль

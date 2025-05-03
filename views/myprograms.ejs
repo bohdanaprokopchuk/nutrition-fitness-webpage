@@ -124,8 +124,7 @@
                         dietContainer: document.getElementById('diet-container'),
                         workoutSummary: document.getElementById('workout-summary')
                     };
-
-                    // Ініціалізація додатку
+                    
                     function init() {
                         loadPlans();
                         setupEventListeners();
@@ -327,7 +326,7 @@
                         workoutState.duration = Math.floor((workoutState.endTime - workoutState.startTime - workoutState.totalPausedTime) / 1000);
 
                         // Визначаємо, чи тренування було завершене повністю
-                        workoutState.completed = workoutState.duration >= workoutState.totalWorkoutSeconds * 0.9; // 90% від запланованого
+                        workoutState.completed = workoutState.duration >= workoutState.totalWorkoutSeconds * 0.9;
 
                         // Розрахунок спалених калорій
                         if (workoutState.totalWorkoutSeconds > 0) {
@@ -582,10 +581,10 @@
                                 <div class="macros mb-3 p-3 bg-white rounded shadow-sm">
                                     <h5 class="text-center mb-3">Харчова цінність</h5>
                                     <div class="row">
-                                        <div class="col-md-6"><strong>Білки:</strong> ${meal.macros?.protein || meal.protein || 0}</div>
-                                        <div class="col-md-6"><strong>Вуглеводи:</strong> ${meal.macros?.carbs || meal.carb || 0}</div>
-                                        <div class="col-md-6"><strong>Жири:</strong> ${meal.macros?.fat || meal.fat || 0}</div>
-                                        <div class="col-md-6"><strong>Калорії:</strong> ${meal.macros?.calories || meal.energy || 0}</div>
+                                        <div class="col-md-6"><strong>Білки:</strong> ${meal.macros?.protein || meal.protein || 0} г</div>
+                                        <div class="col-md-6"><strong>Вуглеводи:</strong> ${meal.macros?.carbs || meal.carb || 0} г</div>
+                                        <div class="col-md-6"><strong>Жири:</strong> ${meal.macros?.fat || meal.fat || 0} г</div>
+                                        <div class="col-md-6"><strong>Калорії:</strong> ${meal.macros?.calories || meal.energy || 0} ккал</div>
                                     </div>
                                 </div>
                                 

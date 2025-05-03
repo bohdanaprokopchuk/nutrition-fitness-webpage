@@ -84,7 +84,6 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', async function () {
-      // Lazy loading для зображень
       const lazyLoadImages = () => {
         const images = document.querySelectorAll('img[data-src]');
         const imageObserver = new IntersectionObserver((entries) => {
@@ -361,7 +360,6 @@
         }
       });
 
-      // Ініціалізація
       let userPlan = JSON.parse(localStorage.getItem('userMealPlan')) || [];
       const dietData = await loadDietData();
 
